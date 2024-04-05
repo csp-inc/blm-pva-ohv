@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "blm-tortoise",
+  "private_key_id": "1d5d79b7808f7119a8d869051d759f09e0289ecd",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCOhmePXAwO4RJa\n4THDoRFE1Xax2bwUsOHd4aREhemqkSrY1Sw1FXAwKcx8yoTNcbym2h5xjUZ3pxhd\nas4MbUxQ7/VoUdtbRpXOREdcrIwTHm6TYfMONI0efP9v22ukxC84SQnyuwmtjkUi\nr9F6OCC9R/9f+/+tw2TZ9J80tzijDRR/6w1epvf1naZ9MIgQOd51+pWq01ccglb+\nlxZZL80xYHRTYOD4pZNAxso0rNqIsS8qRmKfBlcWUYwLtHloY603Fqv1ENhCJSRB\np0to3D1CT5rxedKckZ8vuDTE+eqBQuUZjQOToMRQ878peLHW8Chh6TOawsth5VI/\n4iA6l3QDAgMBAAECggEADt3l6It/9dS0GZxlmKlGSAlXlRayv+/G0mJqmaaO/gv1\neGJyzDi9F/EMPl97pIMphrgNi+e3gtyrCyI3IGRi8mBiwhZ5IgIbYfA3shWM6Pj4\nLNHUoiszezYrs6B45S99A3XZnqMJpTvIFLsFR/vvLP9ZG/XehjgcXtXdqN3h1Qls\n5gEgkaleTiVmzAxVpxt5hSQxZ70fRNlvWXPkvHlO8tnqny5O4vZp0+ev5sSpRnMz\n2ieTGdtywHwqB0yA4ADIad0g0gR0r8R0lpKjoUF6RSA7FahIDC/njf7eUil+RVBy\nsl0nG3Lf6o+15gOXn94Zn2E3p69JDxZ+rB7/6VokZQKBgQDBBaAcZo7Nrl60I+i0\nFBHEndIfgdBRyldh6u/86GAr46kf4FQ+1ptMisG04jcmfBHYio6CDJhJBTQXb11I\nVa9z8trzoCjb+Onl5Q44Ff4nRN2Xb1ppg/TgfC0M1aEgykHigA/5mGjzRXl2NBYY\nFP0D1Be7P7Zw2fy0iLgwko9ExQKBgQC9Bvb6+cHGLF6JPZufZ3JBZ1nNvBGRqgtL\nP6HmR4K3DG/hXLbc11Oc/2xj+hFkKzZBKLyRP1f7SHKMkPYjlD/B9VQ6oeOCUonD\nxmYAX21hGBiC+PzARqgAXrVRE5jbiOdVPdpUOWUKOutd28icFk4ioeV0Gk2XWdu0\nneR84leyJwKBgHcff6bHbI5ndK78EltAn46WT91+AhDYLYGSurV8vA2aHQA9NADr\n9UARymZVze+EVocrS7PbDgjSm0lzQ0CnEPcgBByi1VSck817xYC7ofSePZt973B7\nLZ91Q2BOX3ibGnosyq8hbnPkhod6sb//A/9e356CPZf8EEdisTnY2W55AoGAWYon\nDBOq2njB/ziTsxqJYLnYLEBeAiYOW4K06iQNoy/c/1+vr0TAcqn7ahBWlKBzfsIR\nMKxUvM9Ak51HOutKmFHhqDRvVJhMcdRVFPAfG9MSKVhQQbQ2eJZkRReHXNao3hQC\ni8r0NbhbLYairG1UbctKqYicIImMLS5twUpmSBkCgYA9RmofQ5+tB/+JMViD+y3c\nAgfomB2et/35MkJOAtTU7JtDysU1nBlKp8lz/wgIQ2rf1zbkDixXbQoquutPBDYc\n4KqyZQnKyxzkI9YVjfRD44EoYmLOlAXTkP7Ivp1GnN9uYEmMuPabbjvpLwOMu8zb\nyJ2k9WRiSEiqYSse4BTGjg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "my-rstudio-service-account@blm-tortoise.iam.gserviceaccount.com",
+  "client_id": "111657014679561108296",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-rstudio-service-account%40blm-tortoise.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

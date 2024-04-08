@@ -64,7 +64,7 @@ values_df_long$Trend[values_df_long$Trend == 0] <- "Stable"
 unique(values_df_long$Trend)
 
 # Here is where you can change the number of cells you are considering
-sampled_values <- sample(unique(values_df_long$raster_cell), 500000, replace = FALSE)
+sampled_values <- sample(unique(values_df_long$raster_cell), 50000, replace = FALSE)
 
 values_df_long <- values_df_long %>% filter(raster_cell %in% sampled_values)
 

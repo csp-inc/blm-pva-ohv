@@ -60,7 +60,8 @@ PrepDataForJAGS_OHV <- function(){
   
   # Save the data for JAGS
   dfj_t$data.for.bugs <- list(N = N,
-                              TREND = TREND,
+                              # TREND = TREND,
+                              trend = trend,
                               GRID = GRID,
                               STATE = STATE,
                               CHANGE = CHANGE,

@@ -756,63 +756,6 @@ final_random %>%
 
 
 
-
-
-## Creating the long dataframe from the master sheet
-
-values_df <- read.csv("./OHV_SHP/master_cells.csv")
-
-values_df_long <- values_df[,2:8] %>% 
-    pivot_longer(
-       cols = c("V70","V80","V10","V20"), 
-       names_to = "year",
-        values_to = "value"
-      )
-
-values_df_long <- values_df_long[complete.cases(values_df_long$value), ]
-
-# To sample 25% of total cells from all cells need 2730884
-
-sampled_values <- sample(unique(values_df_long$raster_cell), 50000, replace = FALSE)
-
-values_df_sub <- values_df_long %>% filter(raster_cell %in% sampled_values)
-str(values_df_sub)
-
-library(lme4)
-model <- glmer(value ~ year + (1 | state), data = values_df_sub, family = "poisson")
-summary(model)
-ranef(model)
-
-val_2010 <- exp(-1.05205) # 0.3492211
-val_2020 <- exp(0.05783) # 1.059535 = 1.408756
-val_1970 <- exp(-0.35575) # 0.7006478 = 1.049869
-val_1980 <- exp(-0.20280) # 0.8164415 = 1.165663
-
-
-library(sjPlot)
-library(effects)
-
-plot_model(model, type = "est", show.values = TRUE)
-
-par(mfrow=c(2,2))
-plot(model)
-
-residuals <- residuals(model)
-
-# Fit a 0-inflated poisson in glmer
-model <- glmer(cbind(value == 0, value) ~ year + (1 | state),
-               data = values_df_sub,
-               family = binomial(link = "logit"))
-summary(model)
-
-plot(model)
-
-plot_model(model, type = "est", show.values = TRUE)
-
-
-
-
-
 trails <- rast("./Routes/Route_density.tif")
 trails <- classify(trails, cbind(0, NaN), right=FALSE)
 trails <- mask(crop(trails,dt_range),dt_range)
@@ -851,8 +794,7 @@ values(resid_spat) <- trail_df_resid$resid
 hist(values(resid_spat))
 
 plot(resid_spat)
-setwd("/Users/madicsp/Desktop")
-writeRaster(resid_spat, "./Routes/model_resid.tif")
+writeRaster(resid_spat, "./other_data/Routes/model_resid.tif")
 
 
 S1400_dist <- rast("./Routes/TIGER_2010_S1400_dist.tif")

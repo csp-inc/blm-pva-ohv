@@ -69,6 +69,8 @@ writeRaster(NAIP_2010_mosaic_cropped,"./output_layers/NAIP_2010_cropped.tif", ov
 
 ##### 2020 ------
 
+# Process for 2020 is identical to 2010
+
 if(dir.exists("./raw_inference/NAIP_2019_2021") == FALSE){dir.create("./raw_inference/NAIP_2019_2021")}
 
 contents <- gcs_list_objects(bucket = bucket_name,
@@ -92,6 +94,7 @@ dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 NAIP_2020_mosaic <- mask(crop(NAIP_2020_mosaic,dt_range_web),dt_range_web)
 plot(NAIP_2020_mosaic,background="black")
 
+# Classifying values to coerce raster to be categorical (not changing actual values)
 NAIP_2020_mosaic <- classify(NAIP_2020_mosaic, cbind(0, 1, 0), right=FALSE)
 NAIP_2020_mosaic <- classify(NAIP_2020_mosaic, cbind(1, 2, 1), right=FALSE)
 NAIP_2020_mosaic <- classify(NAIP_2020_mosaic, cbind(2, 4, 2), right=FALSE)
@@ -134,18 +137,22 @@ purrr::map(folder_to_download, function(x)
 
 ohv_70_cleaned.files = Sys.glob("./raw_inference/netr_70s/*.tif") 
 ohv_70_cleaned.sprc = sprc(ohv_70_cleaned.files)
+
+# Because of spatial overlap in coverage due to inference process for 70s images
+# the collection must be mosaiced and the maximum pixel value should be chosen.
+# This ensures that no all 0 inference areas replace actual inference.
 ohv_70_cleaned.mosaic = mosaic(ohv_70_cleaned.sprc, fun = "max")
 
 plot(ohv_70_cleaned.mosaic[[1]], background = "black")
 
-
+# Cropping to the df range
 dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 NETR_1970_full_netr_web <- crop(ohv_70_cleaned.mosaic[[1]],dt_range_web)
 NETR_1970_full_netr_web <- mask(NETR_1970_full_netr_web,dt_range_web)
 plot(NETR_1970_full_netr_web)
 
-# Need to classify raster so values are discrete instead of continuous
+# Classifying values to coerce raster to be categorical (not changing actual values)
 NETR_1970_full_netr_web <- classify(NETR_1970_full_netr_web, cbind(0, 1, 0), right=FALSE)
 NETR_1970_full_netr_web <- classify(NETR_1970_full_netr_web, cbind(1, 2, 1), right=FALSE)
 NETR_1970_full_netr_web <- classify(NETR_1970_full_netr_web, cbind(2, 4, 2), right=FALSE)
@@ -153,8 +160,8 @@ NETR_1970_full_netr_web <- classify(NETR_1970_full_netr_web, cbind(4, 5, 4), rig
 
 plot(NETR_1970_full_netr_web)
 
+# Saving output cropped to mdt range
 writeRaster(NETR_1970_full_netr_web,"./output_layers/NETR_1970_full_netr_web.tif", overwrite = TRUE)
-
 
 # Load in 1970s coverage shapefiles created in qGIS for the NETR only data
 NETR_all <- st_read("./shapefiles/cropping/1970_netr_all.shp")
@@ -191,12 +198,11 @@ purrr::map(folder_to_download, function(x)
 
 ohv_70_cleaned.files = Sys.glob("./raw_inference/noc_70s/*.tif") 
 ohv_70_cleaned.sprc = sprc(ohv_70_cleaned.files) 
-# Merge the collection using the mosaic function with max, this is needed because of overlap in these images and presence of 0
+# Again, needing to use mosaic to ensure inference is used
 ohv_70_cleaned.mosaic = mosaic(ohv_70_cleaned.sprc,fun = "max")
 
-plot(ohv_70_cleaned.mosaic[[1]], background="black") #three identical layers, so plot only the first one
-
 noc_70_mosaic <- ohv_70_cleaned.mosaic[[1]]
+plot(ohv_70_cleaned.mosaic[[1]], background="black") 
 
 writeRaster(noc_70_mosaic,"./output_layers/NOC_1970_full_noc_web.tif")
 
@@ -218,12 +224,12 @@ plot(noc_70_mosaic_masked)
 NETR_1970s_all <- merge(n70,noc_70_mosaic_masked)
 plot(NETR_1970s_all)
 
+# Masking the final raster to the mdt range
 dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
-
 NETR_1970s_all <- mask(NETR_1970s_all,dt_range_web)
 plot(NETR_1970s_all)
 
-# Need to classify raster so values are discrete instead of continuous
+# Classifying values to coerce raster to be categorical (not changing actual values)
 NETR_1970s_all <- classify(NETR_1970s_all, cbind(0, 1, 0), right=FALSE)
 NETR_1970s_all <- classify(NETR_1970s_all, cbind(1, 2, 1), right=FALSE)
 NETR_1970s_all <- classify(NETR_1970s_all, cbind(2, 4, 2), right=FALSE)
@@ -284,6 +290,7 @@ NETR_1980_full_web <- crop(ohv_80_cleaned.mosaic[[1]],dt_range_web)
 NETR_1980_full_web <- mask(NETR_1980_full_web,dt_range_web)
 plot(NETR_1980_full_web)
 
+# Classifying values to coerce raster to be categorical (not changing actual values)
 NETR_1980_full_web <- classify(NETR_1980_full_web, cbind(0, 1, 0), right=FALSE)
 NETR_1980_full_web <- classify(NETR_1980_full_web, cbind(1, 2, 1), right=FALSE)
 NETR_1980_full_web <- classify(NETR_1980_full_web, cbind(2, 4, 2), right=FALSE)
@@ -291,7 +298,6 @@ NETR_1980_full_web <- classify(NETR_1980_full_web, cbind(4, 5, 4), right=FALSE)
 
 
 writeRaster(NETR_1980_full_web,"./output_layers/NETR_1980_full_web.tif", overwrite = TRUE)
-
 
 NETR_80s <- st_read("./shapefiles/cropping/1980_netr_all.shp")
 

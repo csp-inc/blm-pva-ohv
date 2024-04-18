@@ -10,19 +10,12 @@ PrepDataForJAGS_OHV <- function(){
   
   # Categorical
   N<-nrow(data)
-  TREND <- data$TrendID_jags
-  GRID <- data$gridID_jags
-  nTiles <- length(unique(data$gridID_jags))
-  STATE <- data$stateID_jags
-  CHANGE <- data$Change_ClassID_jags
-  START <- data$StartID_jags
-  
-  # Numeric
-  start_s<-data$Start_Scale
-  year_s <- data$Year_Scale
-  start <- data$Start
-  year <- data$Change_year
-  
+  TREND <- data$trendID_jags
+  raster <- data$rasterID_jags
+  grid <- data$gridID_jags
+  state <- data$stateID_jags
+  change_class <- data$change_classID_jags
+  start_val <- data$startID_jags
   
   # Matirx of responses
   trend<-matrix(data = 0, nrow = N, ncol = 3)
@@ -34,24 +27,35 @@ PrepDataForJAGS_OHV <- function(){
     }
   }
   
+  # Numeric
+  start_val_num <- data$start_val
+  year_end <- data$change_end_year
+  
+  # Numeric scaled
+  start_val_num_s <-data$start_val_s
+  year_end_s <- data$year_end_s
+  
   # Other data values needed for estimation
-  data_C1 <- data %>% filter(Change_Class == "C1") 
-  C1_start_mean <- mean(data_C1$Start_Scale)
   
-  data_C2 <- data %>% filter(Change_Class == "C2") 
-  C2_start_mean <- mean(data_C2$Start_Scale)
+  nTiles <- length(unique(data$gridID_jags))
+  nCells <- length(unique(data$rasterID_jags))
   
-  data_C3 <- data %>% filter(Change_Class == "C3") 
-  C3_start_mean <- mean(data_C3$Start_Scale)
+  data_C1 <- data %>% filter(change_class == "C1") 
+  C1_start_mean <- mean(data_C1$start_val_s)
   
+  data_C2 <- data %>% filter(change_class == "C2") 
+  C2_start_mean <- mean(data_C2$start_val_s)
   
+  data_C3 <- data %>% filter(change_class == "C3") 
+  C3_start_mean <- mean(data_C3$start_val_s)
+  
+  # Predictions
   # Create range of values for in-modeling predictions, both scaled and not scaled
-  year_predict <- as.numeric(seq(min(year_s), max(year_s), length.out = 50))
-  year_predict_ns <- as.numeric(seq(min(year), max(year), length.out = 50))
+  year_predict <- as.numeric(seq(min(year_end_s), max(year_end_s), length.out = 50))
+  start_predict <- as.numeric(seq(min(start_val_num_s), max(start_val_num_s), length.out = 50))
   
-  start_predict <- as.numeric(seq(min(start_s), max(start_s), length.out = 50))
-  start_predict_ns <- as.numeric(seq(min(start), max(start), length.out = 50))
-  
+  year_predict_ns <- as.numeric(seq(min(year_end), max(year_end), length.out = 50))
+  start_predict_ns <- as.numeric(seq(min(start_val_num), max(start_val_num), length.out = 50))
   
   
   
@@ -60,21 +64,23 @@ PrepDataForJAGS_OHV <- function(){
   
   # Save the data for JAGS
   dfj_t$data.for.bugs <- list(N = N,
-                              # TREND = TREND,
+                              # Categorical
                               trend = trend,
-                              GRID = GRID,
-                              STATE = STATE,
-                              CHANGE = CHANGE,
-                              START = START,
+                              raster = raster,
+                              grid = grid,
+                              state = state,
+                              change_class = change_class,
+                              start_val = start_val,
+                              # Numerical
+                              start_val_num_s = start_val_num_s,
+                              year_end_s = year_end_s,
+                              # Other data
+                              nCells = nCells,
                               nTiles = nTiles,
-                              start_s = start_s,
-                              year_s = year_s,
-                              start = start,
-                              year = year,
                               C1_start_mean = C1_start_mean,
                               C2_start_mean = C2_start_mean,
                               C3_start_mean = C3_start_mean,
-                              # Prediction dataframes for covariates
+                              # Prediction dataframes for covariates (scaled)
                               start_predict = start_predict,
                               year_predict = year_predict
                               
@@ -86,7 +92,6 @@ PrepDataForJAGS_OHV <- function(){
                         year_predict_ns = year_predict_ns)
   
   # Save raw data for covariates
-  # What do I put here?
   dfj_t$raw_covs <- list()
   
   # Specifiy initial values
@@ -96,13 +101,7 @@ PrepDataForJAGS_OHV <- function(){
                                      alphaA=runif(3,-0.01,0.01),
                                      betaB=runif(3,-0.01,0.01),
                                      gammaC=runif(3,-0.01,0.01)
-                                     # A=runif(1,-0.01,0.01),
-                                     # B=runif(1,-0.01,0.01),
-                                     # C=runif(1,-0.01,0.01),
-                                     # tau=runif(1,-0.01,0.01),
-                                     # Atau=runif(1,-0.01,0.01),
-                                     # Btau=runif(1,-0.01,0.01),
-                                     # Ctau=runif(1,-0.01,0.01)
+
   )}
   
   
@@ -117,7 +116,9 @@ PrepDataForJAGS_OHV <- function(){
 
 
 # MODEL functions
-WriteJAGS_change.cat_start.s <- function(){
+
+# Model 1: RE of grid ID
+WriteJAGS_changecat_starts_gridRE <- function(){
   BUGSfilename_mult <- "./models/multinomial_jagsUI/code.OHV.txt"
   cat("
     
@@ -130,13 +131,13 @@ WriteJAGS_change.cat_start.s <- function(){
         #process model
         
         #Increasae
-        log(p0[i,1]) <- alphaA[CHANGE[i]] + alpha[1] * start_s[i] + gridRE[GRID[i]] 
+        log(p0[i,1]) <- alphaA[change_class[i]] + alpha * start_val_num_s[i] + gridRE[grid[i]] 
         
         #Stable
-        log(p0[i,2]) <- betaB[CHANGE[i]] + beta[1] * start_s[i] + gridRE[GRID[i]]
+        log(p0[i,2]) <- betaB[change_class[i]] + beta * start_val_num_s[i] + gridRE[grid[i]]
         
         #Decrease
-        log(p0[i,3]) <- gammaC[CHANGE[i]] + gamma[1] * start_s[i] + gridRE[GRID[i]]  
+        log(p0[i,3]) <- gammaC[change_class[i]] + gamma * start_val_num_s[i] + gridRE[grid[i]]  
         
         for(j in 1:3){
         p[i,j]<-p0[i,j]/sum(p0[i, ])
@@ -144,39 +145,39 @@ WriteJAGS_change.cat_start.s <- function(){
 
    }
 
-# #derived parameters
-# log(p1_C1) <- (alpha[1] * C1_start_mean) + alphaA[1]
-# log(p1_C2) <- (alpha[1] * C2_start_mean) + alphaA[2]
-# log(p1_C3) <- (alpha[1] * C3_start_mean) + alphaA[3]
-# 
-# log(p2_C1) <- (beta[1] * C1_start_mean) + betaB[1]
-# log(p2_C2) <- (beta[1] * C2_start_mean) + betaB[2]
-# log(p2_C3) <- (beta[1] * C3_start_mean) + betaB[3]
-# 
-# log(p3_C1) <- (gamma[1] * C1_start_mean) + gammaC[1]
-# log(p3_C2) <- (gamma[1] * C2_start_mean) + gammaC[2]
-# log(p3_C3) <- (gamma[1] * C3_start_mean) + gammaC[3]
-# 
-# # Adding the probabilities for all trends for each change class
-# sum_p_C1 <- sum(p1_C1, p2_C1, p3_C1)
-# sum_p_C2 <- sum(p1_C2, p2_C2, p3_C2)
-# sum_p_C3 <- sum(p1_C3, p2_C3, p3_C3)
-# 
-# # Normalizing probabilities for each trend for each change class
-# #Increase
-# p1_C1_prob <- p1_C1/sum_p_C1
-# p2_C1_prob <- p2_C1/sum_p_C1
-# p3_C1_prob <- p3_C1/sum_p_C1
-# 
-# #Stable
-# p1_C2_prob <- p1_C2/sum_p_C2
-# p2_C2_prob <- p2_C2/sum_p_C2
-# p3_C2_prob <- p3_C2/sum_p_C2
-# 
-# #Decrease
-# p1_C3_prob <- p1_C3/sum_p_C3
-# p2_C3_prob <- p2_C3/sum_p_C3
-# p3_C3_prob <- p3_C3/sum_p_C3
+#derived parameters
+log(p1_C1) <- (alpha * C1_start_mean) + alphaA[1]
+log(p1_C2) <- (alpha * C2_start_mean) + alphaA[2]
+log(p1_C3) <- (alpha * C3_start_mean) + alphaA[3]
+
+log(p2_C1) <- (beta * C1_start_mean) + betaB[1]
+log(p2_C2) <- (beta * C2_start_mean) + betaB[2]
+log(p2_C3) <- (beta * C3_start_mean) + betaB[3]
+
+log(p3_C1) <- (gamma * C1_start_mean) + gammaC[1]
+log(p3_C2) <- (gamma * C2_start_mean) + gammaC[2]
+log(p3_C3) <- (gamma * C3_start_mean) + gammaC[3]
+
+# Adding the probabilities for all trends for each change class
+sum_p_C1 <- sum(p1_C1, p2_C1, p3_C1)
+sum_p_C2 <- sum(p1_C2, p2_C2, p3_C2)
+sum_p_C3 <- sum(p1_C3, p2_C3, p3_C3)
+
+# Normalizing probabilities for each trend for each change class
+#Increase
+p1_C1_prob <- p1_C1/sum_p_C1
+p2_C1_prob <- p2_C1/sum_p_C1
+p3_C1_prob <- p3_C1/sum_p_C1
+
+#Stable
+p1_C2_prob <- p1_C2/sum_p_C2
+p2_C2_prob <- p2_C2/sum_p_C2
+p3_C2_prob <- p3_C2/sum_p_C2
+
+#Decrease
+p1_C3_prob <- p1_C3/sum_p_C3
+p2_C3_prob <- p2_C3/sum_p_C3
+p3_C3_prob <- p3_C3/sum_p_C3
 
 
 
@@ -191,10 +192,6 @@ for(i in 1:3){ ## the fixed effect of start year
   gammaC[i]~dnorm(0,1)
 } 
 
-# # Hyperparameters for the fixed effect
-# A~dnorm(0,0.0001)
-# B~dnorm(0,0.0001)
-# C~dnorm(0,0.0001)
 
 #priors for RE of grid cell id
 
@@ -208,11 +205,204 @@ for(i in 1:nTiles){
 #   gridRE[i]~dnorm(0,tau) #Random effects
 # } 
 
-#variance for random effect and for hyper parameters for the fixed effect of tenure type
-# tau~dgamma(0.0001,0.0001)
-# Atau~dgamma(0.0001,0.0001)
-# Btau~dgamma(0.0001,0.0001)
-# Ctau~dgamma(0.0001,0.0001)
+
+}",file=BUGSfilename_mult)
+  return(BUGSfilename_mult)
+}
+
+# Model 2: RE of raster cell ID
+WriteJAGS_changecat_starts_rasterRE <- function(){
+  BUGSfilename_mult <- "./models/multinomial_jagsUI/code.OHV.txt"
+  cat("
+    
+    model{
+   
+     for(i in 1:N){
+        
+        trend[i,1:3]~dmulti(p[i,1:3],1) #likelihood
+        
+        #process model
+        
+        #Increasae
+        log(p0[i,1]) <- alphaA[change_class[i]] + alpha * start_val_num_s[i] + rasterRE[raster[i]] 
+        
+        #Stable
+        log(p0[i,2]) <- betaB[change_class[i]] + beta * start_val_num_s[i] + rasterRE[raster[i]]
+        
+        #Decrease
+        log(p0[i,3]) <- gammaC[change_class[i]] + gamma * start_val_num_s[i] + rasterRE[raster[i]]  
+        
+        for(j in 1:3){
+        p[i,j]<-p0[i,j]/sum(p0[i, ])
+        }
+
+   }
+
+#derived parameters
+log(p1_C1) <- (alpha * C1_start_mean) + alphaA[1]
+log(p1_C2) <- (alpha * C2_start_mean) + alphaA[2]
+log(p1_C3) <- (alpha * C3_start_mean) + alphaA[3]
+
+log(p2_C1) <- (beta * C1_start_mean) + betaB[1]
+log(p2_C2) <- (beta * C2_start_mean) + betaB[2]
+log(p2_C3) <- (beta * C3_start_mean) + betaB[3]
+
+log(p3_C1) <- (gamma * C1_start_mean) + gammaC[1]
+log(p3_C2) <- (gamma * C2_start_mean) + gammaC[2]
+log(p3_C3) <- (gamma * C3_start_mean) + gammaC[3]
+
+# Adding the probabilities for all trends for each change class
+sum_p_C1 <- sum(p1_C1, p2_C1, p3_C1)
+sum_p_C2 <- sum(p1_C2, p2_C2, p3_C2)
+sum_p_C3 <- sum(p1_C3, p2_C3, p3_C3)
+
+# Normalizing probabilities for each trend for each change class
+#Increase
+p1_C1_prob <- p1_C1/sum_p_C1
+p2_C1_prob <- p2_C1/sum_p_C1
+p3_C1_prob <- p3_C1/sum_p_C1
+
+#Stable
+p1_C2_prob <- p1_C2/sum_p_C2
+p2_C2_prob <- p2_C2/sum_p_C2
+p3_C2_prob <- p3_C2/sum_p_C2
+
+#Decrease
+p1_C3_prob <- p1_C3/sum_p_C3
+p2_C3_prob <- p2_C3/sum_p_C3
+p3_C3_prob <- p3_C3/sum_p_C3
+
+
+
+#priors
+alpha~dnorm(0,0.0001)
+beta~dnorm(0,0.0001)
+gamma~dnorm(0,0.0001)
+
+for(i in 1:3){ ## the fixed effect of start year
+  alphaA[i]~dnorm(0,1)
+  betaB[i]~dnorm(0,1)
+  gammaC[i]~dnorm(0,1)
+} 
+
+
+#priors for RE of raster cell id
+
+rasterRE.sd ~ dgamma(0.1, 0.1)
+rasterRE.prec <- pow(rasterRE.sd, -2)
+for(i in 1:nCells){
+  rasterRE[i] ~ dnorm(0, rasterRE.prec)
+}
+
+# for(i in 1:nCells){ 
+#   rasterRE[i]~dnorm(0,tau) #Random effects
+# } 
+
+
+}",file=BUGSfilename_mult)
+  return(BUGSfilename_mult)
+}
+
+# Model 3: RE of raster cell ID and grid cell ID
+WriteJAGS_changecat_starts_rasterRE_gridRE <- function(){
+  BUGSfilename_mult <- "./models/multinomial_jagsUI/code.OHV.txt"
+  cat("
+    
+    model{
+   
+     for(i in 1:N){
+        
+        trend[i,1:3]~dmulti(p[i,1:3],1) #likelihood
+        
+        #process model
+        
+        #Increasae
+        log(p0[i,1]) <- alphaA[change_class[i]] + alpha * start_val_num_s[i] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Stable
+        log(p0[i,2]) <- betaB[change_class[i]] + beta * start_val_num_s[i] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Decrease
+        log(p0[i,3]) <- gammaC[change_class[i]] + gamma * start_val_num_s[i] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        for(j in 1:3){
+        p[i,j]<-p0[i,j]/sum(p0[i, ])
+        }
+
+   }
+
+#derived parameters
+log(p1_C1) <- (alpha * C1_start_mean) + alphaA[1]
+log(p1_C2) <- (alpha * C2_start_mean) + alphaA[2]
+log(p1_C3) <- (alpha * C3_start_mean) + alphaA[3]
+
+log(p2_C1) <- (beta * C1_start_mean) + betaB[1]
+log(p2_C2) <- (beta * C2_start_mean) + betaB[2]
+log(p2_C3) <- (beta * C3_start_mean) + betaB[3]
+
+log(p3_C1) <- (gamma * C1_start_mean) + gammaC[1]
+log(p3_C2) <- (gamma * C2_start_mean) + gammaC[2]
+log(p3_C3) <- (gamma * C3_start_mean) + gammaC[3]
+
+# Adding the probabilities for all trends for each change class
+sum_p_C1 <- sum(p1_C1, p2_C1, p3_C1)
+sum_p_C2 <- sum(p1_C2, p2_C2, p3_C2)
+sum_p_C3 <- sum(p1_C3, p2_C3, p3_C3)
+
+# Normalizing probabilities for each trend for each change class
+#Increase
+p1_C1_prob <- p1_C1/sum_p_C1
+p2_C1_prob <- p2_C1/sum_p_C1
+p3_C1_prob <- p3_C1/sum_p_C1
+
+#Stable
+p1_C2_prob <- p1_C2/sum_p_C2
+p2_C2_prob <- p2_C2/sum_p_C2
+p3_C2_prob <- p3_C2/sum_p_C2
+
+#Decrease
+p1_C3_prob <- p1_C3/sum_p_C3
+p2_C3_prob <- p2_C3/sum_p_C3
+p3_C3_prob <- p3_C3/sum_p_C3
+
+
+
+#priors
+alpha~dnorm(0,0.0001)
+beta~dnorm(0,0.0001)
+gamma~dnorm(0,0.0001)
+
+for(i in 1:3){ ## the fixed effect of start year
+  alphaA[i]~dnorm(0,1)
+  betaB[i]~dnorm(0,1)
+  gammaC[i]~dnorm(0,1)
+} 
+
+
+#priors for RE of raster cell id
+
+rasterRE.sd ~ dgamma(0.1, 0.1)
+rasterRE.prec <- pow(rasterRE.sd, -2)
+for(i in 1:nCells){
+  rasterRE[i] ~ dnorm(0, rasterRE.prec)
+}
+
+# for(i in 1:nCells){ 
+#   rasterRE[i]~dnorm(0,tau) #Random effects
+# } 
+
+#priors for RE of grid cell id
+
+gridRE.sd ~ dgamma(0.1, 0.1)
+gridRE.prec <- pow(gridRE.sd, -2)
+for(i in 1:nTiles){
+  gridRE[i] ~ dnorm(0, gridRE.prec)
+}
+
+# for(i in 1:nTiles){ 
+#   gridRE[i]~dnorm(0,tau) #Random effects
+# } 
+
 
 }",file=BUGSfilename_mult)
   return(BUGSfilename_mult)

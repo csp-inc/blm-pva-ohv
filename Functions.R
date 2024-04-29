@@ -160,10 +160,107 @@ random_sampling <- function(x, small_ext = FALSE){
 }
 
 
+random_sampling3 <- function(x, small_ext = FALSE){
+
+        if(small_ext){
+          x <- x[complete.cases(x), ]
+        }
+  
+      values_df_70 <- x[,c(2,6)]
+      values_df_70 <- values_df_70[complete.cases(values_df_70$V70), ]
+      
+      values_df_80 <- x[,c(3,6)]
+      values_df_80 <- values_df_80[complete.cases(values_df_80$V80), ]
+      
+      values_df_10 <- x[,c(4,6)]
+      values_df_10 <- values_df_10[complete.cases(values_df_10$V10), ]
+      
+      values_df_20 <- x[,c(5,6)]
+      values_df_20 <- values_df_20[complete.cases(values_df_20$V20), ]
+      
+      list <- list()
+      list[[1]] <- values_df_70
+      list[[2]] <- values_df_80
+      list[[3]] <- values_df_10
+      list[[4]] <- values_df_20
 
 
+      output_mean_merge <- list()
+      output_sd_merge <- list()
+      
+      set.seed(41)
+      for (i in 1:4){
+        df <- list[[i]]
+        prop_df <- data.frame(matrix(nrow = 3, ncol = 1000))
+        for (j in 1:1000){
+          # Generate 1000 random row indices
+          random_indices <- sample(1:nrow(df), 1000, replace = FALSE)
+          # Subset the dataset with the randomly selected indices
+          subset_df <- df[random_indices, ]
+          values <- as.data.frame(table(subset_df[,1]))
+          vals_high <- values %>% filter(Var1 == "2"|Var1 == "4")
+          vals_high_sum <- as.data.frame(cbind("3",sum(vals_high$Freq)))
+          names(vals_high_sum) <- names(values)
+          vals_low <- values %>% filter(Var1 == "0"|Var1 == "1")
+          values <- rbind(vals_low,vals_high_sum)
+          values$Freq <- as.integer(values$Freq)
+          values <- values[,2]/sum(values[,2])
+          prop_df[,j] <- values
+        }
+        output_mean_merge[[i]] <- rowMeans(prop_df)
+        prop_mat <- as.matrix(prop_df)
+        output_sd_merge[[i]] <- apply(prop_mat, 1, sd)
+      }
+      
+      output_mean_merge[[1]]
+      output_mean_merge[[2]]
+      output_mean_merge[[3]]
+      output_mean_merge[[4]]
+      
+      final_prop_merge <- as.data.frame(cbind(output_mean_merge[[1]],
+                                              output_mean_merge[[2]],
+                                              output_mean_merge[[3]],
+                                              output_mean_merge[[4]]))
+      
+      final_sd_merge <- as.data.frame(cbind(output_sd_merge[[1]],
+                                            output_sd_merge[[2]],
+                                            output_sd_merge[[3]],
+                                            output_sd_merge[[4]]))
+      
+      
+      final_prop_merge$OHV_val <- c("0","1","3")
+      
+      final_prop_merge <- final_prop_merge[,c(5,1:4)]
+      
+      names(final_prop_merge) <- c("OHV_val","V1970","V1980","V2010","V2020")
+      
+      
+      final_sd_merge$OHV_val <- c("0","1","3")
+      
+      final_sd_merge <- final_sd_merge[,c(5,1:4)]
+      
+      names(final_sd_merge) <- c("OHV_val","sd1970","sd1980","sd2010","sd2020")
+      
+      mean_long_merge <- final_prop_merge %>% 
+        pivot_longer(
+          cols = c("V1970","V1980","V2010","V2020"), 
+          names_to = "year",
+          values_to = "mean"
+        )
+      
+      sd_long_merge <- final_sd_merge %>% 
+        pivot_longer(
+          cols = c("sd1970","sd1980","sd2010","sd2020"), 
+          names_to = "year",
+          values_to = "sd"
+        )
+      
+      final_random_merge <- cbind(mean_long_merge,sd_long_merge[,3])
+      
 
+      return(final_random_merge)
 
+}
 
 
 

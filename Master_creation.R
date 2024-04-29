@@ -13,10 +13,16 @@ lapply(list.of.packages, require, character.only = TRUE)
 # N2010 <- rast("./output_layers/N10_04052024.tif")
 # N2020 <- rast("./output_layers/N20_04052024.tif")
 
-n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask.tif")
-n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask.tif")
-N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask.tif")
-N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask.tif")
+n1970 <- rast("./output_layers/netr_1970_masked_9.tif")
+n1980 <- rast("./output_layers/netr_1980_masked_9.tif")
+N2010 <- rast("./output_layers/NAIP_2010_masked_9.tif")
+N2020 <- rast("./output_layers/NAIP_2020_masked_9.tif")
+
+
+# n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask.tif")
+# n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask.tif")
+# N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask.tif")
+# N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask.tif")
 
 # Stacking
 stack <- c(n1970,n1980,N2010,N2020)

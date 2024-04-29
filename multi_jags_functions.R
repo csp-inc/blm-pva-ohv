@@ -1,7 +1,7 @@
 # This script creates functions to run various multinomial models for OHV
 
 # Data prep functions
-PrepDataForJAGS_OHV <- function(){
+PrepDataForJAGS_multi_OHV <- function(){
   
   # Load in the saved dataframe
   data <- read.csv("./models/multinomial_jagsUI/Data_for_jags.csv")
@@ -111,7 +111,6 @@ PrepDataForJAGS_OHV <- function(){
   return(dfj_t)
   
 }
-
 
 
 

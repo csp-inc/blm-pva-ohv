@@ -32,11 +32,11 @@ output <- class_summary(stack)
 # Proportion of classified area with each OHV class
 ggplot(output, aes(fill=Class, y=Proportion, x=Decade, label = paste0(round(100*Proportion,1),"%"))) + 
   geom_bar(position="dodge", stat="identity") + 
-  geom_text(size = 2.75, color = "black", position = position_dodge(width = .9), vjust = -.5) +
-  ylab("Percent of Classified Area") + ggtitle("Stats raw")+
-  scale_fill_manual(values = c("#30123b","#28bceb","#a4fc3c","#fb7e21"),name = "OHV route\nabundance category",
-                    labels=c("None","Low", "Med", "High")) + theme_classic() + theme(axis.text.x = element_text(color="black"),
-                                                                                     axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
+  geom_text(size = 5, color = "black", position = position_dodge(width = .9), vjust = -.5) +
+  ylab("Percent of classified crea") + ggtitle("Stats raw")+
+  scale_fill_manual(values = c("#440154","#31688e","#35b779","#fde725"),name = "OHV route\nabundance category",
+                    labels=c("None","Low", "Med", "High")) + theme_classic() + theme(axis.text.x = element_text(color="black", size = 12),
+                                                                                     axis.text.y = element_text(color = "black", size = 12),legend.title = element_text(face = "bold"))
 
 
 
@@ -81,7 +81,7 @@ ggplot(output_binary, aes(fill= factor(Class, c("0","1")), y=Proportion, x=Decad
 
 
 
-salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
+salt_cleaned_stack <- salt_clean(stack, writeR = TRUE)
 
 plot(salt_cleaned_stack)
 
@@ -165,8 +165,33 @@ final_random %>%
   geom_text(size = 2.75, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
   scale_fill_manual(values = c("#a69d8b","#fae51e","darkorange","red"),labels=c("None", "Low","Medium","High"),name="OHV route\nabundance category") +
   theme(axis.title.x = element_blank(), legend.position = "right")+
-  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample in Consistent Area",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
+  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
                                                                                                                                                                       axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
+
+
+final_random3 <- random_sampling3(values_df,small_ext = TRUE)
+
+year_order <- c("V1970","V1980","V2010","V2020")
+M_plot <- final_random3 %>%
+  ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
+  geom_col(position = "dodge")+
+  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
+                position = position_dodge(0.9), width = .3)+
+  scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
+  ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
+  geom_text(size = 3, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
+  scale_fill_manual(values = c("#a69d8b","#fae51e","#ff681e"),labels=c("None", "Low","Medium/High"),name="OHV route\nabundance category") +
+  theme(axis.title.x = element_blank(), legend.position = "right")+
+  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
+                                                                                                                                                   axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
+
+
+M_plot
+ggexport(M_plot, filename = "./figure1.jpeg", res = 300, width = 7.56, height = 5.18, units = "in")
+
+ggsave()
+
+
 
 
 

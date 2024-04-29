@@ -63,8 +63,10 @@ values_df_long$trend[values_df_long$trend == 0] <- "Stable"
 
 unique(values_df_long$trend)
 
+# nrow(values_df)*.0001
+
 # Here is where you can change the number of cells you are considering
-sampled_values <- sample(unique(values_df_long$raster_cell), 50000, replace = FALSE)
+sampled_values <- sample(unique(values_df_long$raster_cell), nrow(values_df)*.001, replace = FALSE)
 
 values_df_long <- values_df_long %>% filter(raster_cell %in% sampled_values)
 
@@ -127,7 +129,7 @@ write.csv(data,"./models/multinomial_jagsUI/Data_for_jags.csv", row.names = FALS
 
 
 # Prepare the data for model
-dfj_t <- PrepDataForJAGS_OHV()
+dfj_t <- PrepDataForJAGS_multi_OHV()
 
 
 # Select the model to run

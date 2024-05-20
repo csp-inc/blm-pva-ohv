@@ -71,7 +71,7 @@ PrepDataForJAGS_glm_OHV <- function(){
                                        tau_rast = 1,
                                        tau_grid = 1,
                                        z = 0.5,  # Initial value for zero-inflation parameter,
-                                       size = 1 # Initial value for negative binomial size parameter
+                                       phi = 1 # Initial value for negative binomial size parameter
                                      
   )}
   
@@ -86,7 +86,7 @@ PrepDataForJAGS_glm_OHV <- function(){
 
 
 WriteJAGS_year_sc_rasterRE_gridRE_zip <- function(){
-  BUGSfilename_zinf <- "./models/0inf_jagsUI/code.OHV.txt"
+  BUGSfilename_zip <- "./models/0inf_jagsUI/code.OHV.txt"
   cat("
     
     model {
@@ -96,10 +96,12 @@ WriteJAGS_year_sc_rasterRE_gridRE_zip <- function(){
           # Logit model for certain 0s
           mu[i] <- exp(beta0 + beta1 * year_sc[i] + rasterRE[raster[i]] + gridRE[grid[i]])
           
+          # Bernouli distribution, determines if i is 0-inflated or not
           zi[i] ~ dbern(z)
           
           # Inflation model
           value[i] ~ dpois(mu[i] * (1 - zi[i]))
+
         }
       
         # Priors
@@ -118,32 +120,44 @@ WriteJAGS_year_sc_rasterRE_gridRE_zip <- function(){
         tau_grid ~ dgamma(0.001, 0.001)
         
         z ~ dbeta(1, 1)  # Prior for zero-inflation parameter
-
-      }",file=BUGSfilename_zinf)
-  return(BUGSfilename_zinf)
+        
+      }",file=BUGSfilename_zip)
+  return(BUGSfilename_zip)
 }
 
-WriteJAGS_year_sc_rasterRE_gridRE_nb <- function(){
-  BUGSfilename_nb <- "./models/0inf_jagsUI/code.OHV.txt"
+WriteJAGS_year_sc_rasterRE_gridRE_zinb <- function(){
+  BUGSfilename_zinb <- "./models/0inf_jagsUI/code.OHV.txt"
   cat("
     
     model {
         # Likelihood
         for (i in 1:N) {
         
-          # Logit model for certain 0s
+          # Log-linear model for the mean
           mu[i] <- exp(beta0 + beta1 * year_sc[i] + rasterRE[raster[i]] + gridRE[grid[i]])
           
+          # Bernoulli distribution, determines if i is 0-inflated or not
           zi[i] ~ dbern(z)
           
-          # Inflation model
-          value[i] ~ (1 - zi[i]) * dnbin(mu[i], size) + zi[i] * dpois(0)
+          # Zero-inflated negative binomial model
+          # value[i] ~ dnbin(mu[i], phi) * (1 - zi[i]) + dpois(0) * zi[i]
+          # value[i] ~ dpois(mu[i] * (1 - zi[i])) + dzinb(mu[i], phi, zi[i])
+          # value[i] ~ dpois(mu[i] * (1 - zi[i])) + dnbin(mu[i], phi) * zi[i]
+          
+          value[i] ~ dpois(mu[i] * (1 - zi[i])) + (1 - zi[i]) * dnbin(mu[i], phi)
+          value[i] ~ dpois(0) * zi[i]  # Point mass at zero component
+          
         }
         
       
         # Priors
         beta0 ~ dnorm(0, 0.01)
         beta1 ~ dnorm(0, 0.01)
+        phi ~ dgamma(0.001, 0.001)  # Prior for overdispersion parameter phi
+        tau_rast ~ dgamma(0.001, 0.001)
+        tau_grid ~ dgamma(0.001, 0.001)
+        z ~ dbeta(1, 1)  # Prior for zero-inflation parameter
+        
         
         for (j in 1:nCells) {
           rasterRE[j] ~ dnorm(0, tau_rast)
@@ -153,12 +167,9 @@ WriteJAGS_year_sc_rasterRE_gridRE_nb <- function(){
           gridRE[k] ~ dnorm(0, tau_grid)
         }
         
-        tau_rast ~ dgamma(0.001, 0.001)
-        tau_grid ~ dgamma(0.001, 0.001)
+      
         
-        z ~ dbeta(1, 1)  # Prior for zero-inflation parameter
-        size ~ dgamma(0.001, 0.001) # Prior for negative binomial size parameter
-
-      }",file=BUGSfilename_nb)
-  return(BUGSfilename_nb)
+      }",file=BUGSfilename_zinb)
+  return(BUGSfilename_zinb)
 }
+

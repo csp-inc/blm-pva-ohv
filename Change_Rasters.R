@@ -120,87 +120,6 @@ change_data_all %>%
 
 
 
-## Using consistent extent to calculate OHV route length stats for each year
-
-
-decades <- c("1970s","1980s","2010s","2020s")
-prop_list <- list()
-for(i in 1:nlyr(stack_masked)){
-  prop <- as.data.frame(table(values(stack_masked[[i]])))
-  prop$sum <- sum(prop$Freq)
-  prop$area <- prop$Freq*(150*150)
-  prop$Decade <- decades[i]
-  prop_list[[i]] <- prop
-}
-
-prop_years <- bind_rows(prop_list)
-
-prop_years$Proportion <- prop_years$Freq/prop_years$sum
-
-
-
-split <-split(prop_years, prop_years$Var1)
-
-for(i in 1:4){
-  if(i == 1){
-    split[[i]]$Length <- 0
-  } else {
-    split[[i]]$Length <- split[[i]]$Freq*as.numeric(split[[i]][1,1])*150
-  }
-}
-
-prop_years <- bind_rows(split)
-
-
-split <-split(prop_years, prop_years$Decade)
-
-for(i in 1:4){
-  split[[i]]$tot_length <- sum(split[[i]]$Length)
-  split[[i]]$prop_length <- split[[i]]$Length / sum(split[[i]]$Length)
-}
-
-
-prop_years <- bind_rows(split)
-
-prop_years <- prop_years %>% filter(Var1 == "1"|Var1 == "2"|Var1 == "4")
-
-
-ggplot(prop_years, aes(fill= factor(Var1, c("1","2","4")), y=Length, x=Decade)) + 
-  geom_bar(position="dodge", stat="identity") + 
-  ylab("Length contributed by each OHV class") +
-  scale_fill_manual(values = c("#28bceb","#a4fc3c","#fb7e21"),labels=c("1 Track","2-3 Tracks","4 + Tracks"),
-                    name="OHV density\ncategory") + theme_classic() + theme(axis.text.x = element_text(color="black"),
-                                                                            axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
-
-
-
-
-ggplot(prop_years, aes(fill= factor(Var1, c("1","2","4")), y=prop_length, x=Decade)) + 
-  geom_bar(position="dodge", stat="identity") + 
-  ylab("Proportion of total length contributed by each OHV class") +
-  scale_fill_manual(values = c("#28bceb","#a4fc3c","#fb7e21"),labels=c("1 Track","2-3 Tracks","4 + Tracks"),
-                    name="OHV density\ncategory") + theme_classic() + theme(axis.text.x = element_text(color="black"),
-                                                                            axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
-
-
-
-
-split <-split(prop_years, prop_years$Decade)
-tot_length <- c()
-for(i in 1:4){
-  tot_length[i] <- sum(split[[i]]$Length)
-}
-
-tot_length <- as.data.frame(tot_length)
-
-tot_length <- cbind(tot_length,decades)
-
-ggplot(tot_length , aes(x=decades, y=tot_length)) + 
-  geom_bar(stat = "identity") +ylab("Total OHV route length in consistent area")
-
-
-
-
 ## Creating change raster with only increase and decrease classes for each time step change
 
 stack_reclass <- classify(stack, cbind(3, 5, 2), right=FALSE)
@@ -286,12 +205,18 @@ hist(values(clip_result))
 writeRaster(clip_result,"./output_layers/Window1000m_mode_change_1980_2020.tif",overwrite = TRUE)
 
 
-# Creating magnitude increase map 
+# Creating magnitude increase map for manuscript 
 
 # First run mean moving window over original layers with a radius of 1000m 
 
-n80 <- stack[[2]]
-N20 <- stack[[4]]
+n80 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+
+n80 <- classify(n80, cbind(2, 3, 151), right=FALSE)
+n80 <- classify(n80, cbind(4, 5, 451), right=FALSE)
+
+N20 <- classify(N20, cbind(2, 3, 151), right=FALSE)
+N20 <- classify(N20, cbind(4, 5, 451), right=FALSE)
 
 # Apply moving window
 raster <- n80
@@ -318,219 +243,13 @@ N20 <- mask(result, dt_range)
 
 
 change_mean <- N20-n80
-change_mean <- classify(change_mean, cbind(-5, 0, 0), right=FALSE)
-writeRaster(change_mean,"./output_layers/Change_Magnitude_1980_2020.tif")
+change_mean <- classify(change_mean, cbind(-500, 0, 0), right=FALSE)
+writeRaster(change_mean,"./output_layers/Change_Magnitude_1980_2020_cleaned.tif",overwrite=TRUE)
 
+mask <- rast("./other_data/masks/all_masks/Merged_80s_2020s_masked_9_nlcdmask_roadsmask_MASK.tif")
+change_mean <- rast("./output_layers/Change_Magnitude_1980_2020_cleaned.tif")
 
-### Random sampling of values from layers
+change_mean_masked <- mask(change_mean,mask, inverse = TRUE)
+writeRaster(change_mean_masked,"./output_layers/Change_Magnitude_1980_2020_cleaned.tif", overwrite = TRUE)
 
-values_df <- read.csv("./other_data/master/master_cells.csv")
-
-# values_df <- values_df[complete.cases(values_df), ]
-# 
-# # Sampling 1000 cells 1000 times from each decade
-# 
-# values_df_70 <- values_df[,c(2,6)]
-# values_df_70 <- values_df_70[complete.cases(values_df_70$V70), ]
-# nrow(values_df_70)
-# nrow(values_df_70)*(150)/1000
-# 
-# values_df_80 <- values_df[,c(3,6)]
-# values_df_80 <- values_df_80[complete.cases(values_df_80$V80), ]
-# nrow(values_df_80)
-# nrow(values_df_80)*(150)/1000
-# 
-# values_df_10 <- values_df[,c(4,6)]
-# values_df_10 <- values_df_10[complete.cases(values_df_10$V10), ]
-# nrow(values_df_10)
-# nrow(values_df_10)*(150)/1000
-# 
-# values_df_20 <- values_df[,c(5,6)]
-# values_df_20 <- values_df_20[complete.cases(values_df_20$V20), ]
-# nrow(values_df_20)
-# nrow(values_df_20)*(150)/1000
-# 
-# list <- list()
-# list[[1]] <- values_df_70
-# list[[2]] <- values_df_80
-# list[[3]] <- values_df_10
-# list[[4]] <- values_df_20
-# 
-# output_mean <- list()
-# output_sd <- list()
-# 
-# set.seed(41)
-# for (i in 1:4){
-#   df <- list[[i]]
-#   prop_df <- data.frame(matrix(nrow = 4, ncol = 1000))
-#   for (j in 1:1000){
-#     # Generate 1000 random row indices
-#     random_indices <- sample(1:nrow(df), 1000, replace = FALSE)
-#     # Subset the dataset with the randomly selected indices
-#     subset_df <- df[random_indices, ]
-#     values <- as.data.frame(table(subset_df[,1]))
-#     values <- values[,2]/sum(values[,2])
-#     prop_df[,j] <- values
-#   }
-#   output_mean[[i]] <- rowMeans(prop_df)
-#   prop_mat <- as.matrix(prop_df)
-#   output_sd[[i]] <- apply(prop_mat, 1, sd)
-# }
-# 
-# output_mean[[1]]
-# output_mean[[2]]
-# output_mean[[3]]
-# output_mean[[4]]
-# 
-# final_prop <- as.data.frame(cbind(output_mean[[1]],
-#       output_mean[[2]],
-#       output_mean[[3]],
-#       output_mean[[4]]))
-# 
-# final_sd <- as.data.frame(cbind(output_sd[[1]],
-#                                   output_sd[[2]],
-#                                   output_sd[[3]],
-#                                   output_sd[[4]]))
-# 
-# 
-# final_prop$OHV_val <- c("0","1","2","4")
-# 
-# final_prop <- final_prop[,c(5,1:4)]
-# 
-# names(final_prop) <- c("OHV_val","V1970","V1980","V2010","V2020")
-# # write.csv(final_prop,"./sample1000.csv", row.names = FALSE)
-# 
-# 
-# final_sd$OHV_val <- c("0","1","2","4")
-# 
-# final_sd <- final_sd[,c(5,1:4)]
-# 
-# names(final_sd) <- c("OHV_val","sd1970","sd1980","sd2010","sd2020")
-# 
-# mean_long <- final_prop %>% 
-#   pivot_longer(
-#     cols = c("V1970","V1980","V2010","V2020"), 
-#     names_to = "year",
-#     values_to = "mean"
-#   )
-# 
-# sd_long <- final_sd %>% 
-#   pivot_longer(
-#     cols = c("sd1970","sd1980","sd2010","sd2020"), 
-#     names_to = "year",
-#     values_to = "sd"
-#   )
-# 
-# final_random <- cbind(mean_long,sd_long[,3])
-# 
-# year_order <- c("V1970","V1980","V2010","V2020")
-
-year_order <- c("V1970","V1980","V2010","V2020")
-final_random %>%
-  ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
-  geom_col(position = "dodge")+
-  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
-                position = position_dodge(0.9), width = .3)+
-  scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
-  ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
-  geom_text(size = 2.75, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
-  scale_fill_manual(values = c("#a69d8b","#fae51e","darkorange","red"),labels=c("None", "Low","Medium","High"),name="OHV route\nabundance category") +
-  theme(axis.title.x = element_blank(), legend.position = "right")+
-  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample in Consistent Area",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
-                                                                                                                                                   axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
-
-
-# Combining classes 2-3 and 4
-
-
-
-
-output_mean_merge <- list()
-output_sd_merge <- list()
-
-set.seed(41)
-for (i in 1:4){
-  df <- list[[i]]
-  prop_df <- data.frame(matrix(nrow = 3, ncol = 1000))
-  for (j in 1:1000){
-    # Generate 1000 random row indices
-    random_indices <- sample(1:nrow(df), 1000, replace = FALSE)
-    # Subset the dataset with the randomly selected indices
-    subset_df <- df[random_indices, ]
-    values <- as.data.frame(table(subset_df[,1]))
-    vals_high <- values %>% filter(Var1 == "2"|Var1 == "4")
-    vals_high_sum <- as.data.frame(cbind("3",sum(vals_high$Freq)))
-    names(vals_high_sum) <- names(values)
-    vals_low <- values %>% filter(Var1 == "0"|Var1 == "1")
-    values <- rbind(vals_low,vals_high_sum)
-    values$Freq <- as.integer(values$Freq)
-    values <- values[,2]/sum(values[,2])
-    prop_df[,j] <- values
-  }
-  output_mean_merge[[i]] <- rowMeans(prop_df)
-  prop_mat <- as.matrix(prop_df)
-  output_sd_merge[[i]] <- apply(prop_mat, 1, sd)
-}
-
-output_mean_merge[[1]]
-output_mean_merge[[2]]
-output_mean_merge[[3]]
-output_mean_merge[[4]]
-
-final_prop_merge <- as.data.frame(cbind(output_mean_merge[[1]],
-                                  output_mean_merge[[2]],
-                                  output_mean_merge[[3]],
-                                  output_mean_merge[[4]]))
-
-final_sd_merge <- as.data.frame(cbind(output_sd_merge[[1]],
-                                output_sd_merge[[2]],
-                                output_sd_merge[[3]],
-                                output_sd_merge[[4]]))
-
-
-final_prop_merge$OHV_val <- c("0","1","3")
-
-final_prop_merge <- final_prop_merge[,c(5,1:4)]
-
-names(final_prop_merge) <- c("OHV_val","V1970","V1980","V2010","V2020")
-# write.csv(final_prop,"./sample1000.csv", row.names = FALSE)
-
-
-final_sd_merge$OHV_val <- c("0","1","3")
-
-final_sd_merge <- final_sd_merge[,c(5,1:4)]
-
-names(final_sd_merge) <- c("OHV_val","sd1970","sd1980","sd2010","sd2020")
-
-mean_long_merge <- final_prop_merge %>% 
-  pivot_longer(
-    cols = c("V1970","V1980","V2010","V2020"), 
-    names_to = "year",
-    values_to = "mean"
-  )
-
-sd_long_merge <- final_sd_merge %>% 
-  pivot_longer(
-    cols = c("sd1970","sd1980","sd2010","sd2020"), 
-    names_to = "year",
-    values_to = "sd"
-  )
-
-final_random_merge <- cbind(mean_long_merge,sd_long_merge[,3])
-
-year_order <- c("V1970","V1980","V2010","V2020")
-
-
-final_random_merge %>%
-  ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
-  geom_col(position = "dodge")+
-  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
-                position = position_dodge(0.9), width = .3)+
-  scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
-  ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
-  geom_text(size = 3, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
-  scale_fill_manual(values = c("#a69d8b","#fae51e","#ff681e"),labels=c("None", "Low","Medium/High"),name="OHV route\nabundance category") +
-  theme(axis.title.x = element_blank(), legend.position = "right")+
-  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
-                                                                                                                                                   axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
-
+plot(change_mean_masked)

@@ -1,6 +1,6 @@
-## Summary stats functions
+## Summary stats functions -----
 
-
+# This function summarizes the OHV density classes in the decadal layers
 # Apply to a rasterstack
 class_summary <- function(x){
   
@@ -27,6 +27,7 @@ class_summary <- function(x){
   return(prop_years)
 }
 
+# This function combines values for OHV density classes medium and high
 # Apply to a dataframe created by class_summary()
 join2_4 <- function(x){
 
@@ -50,6 +51,7 @@ join2_4 <- function(x){
   return(prop_years_high)
 }
 
+# This function combines values for OHV density classes low, medium, and high
 # Apply to a dataframe created by class_summary()
 join1_4 <- function(x){
 
@@ -74,22 +76,22 @@ prop_years_binary <- bind_rows(joined_list)
 return(prop_years_binary)
 }
 
-
+# This function randomly samples 1000 chips 1000 times and summarizes OHV density information
 random_sampling <- function(x, small_ext = FALSE){
   if(small_ext){
     x <- x[complete.cases(x), ]
   }
   values_df_70 <- x[,c(2,6)]
-  values_df_70 <- values_df_70[complete.cases(values_df_70$V70), ]
+  values_df_70 <- values_df_70[complete.cases(values_df_70$V1970), ]
   
   values_df_80 <- x[,c(3,6)]
-  values_df_80 <- values_df_80[complete.cases(values_df_80$V80), ]
+  values_df_80 <- values_df_80[complete.cases(values_df_80$V1980), ]
  
   values_df_10 <- x[,c(4,6)]
-  values_df_10 <- values_df_10[complete.cases(values_df_10$V10), ]
+  values_df_10 <- values_df_10[complete.cases(values_df_10$V2010), ]
   
   values_df_20 <- x[,c(5,6)]
-  values_df_20 <- values_df_20[complete.cases(values_df_20$V20), ]
+  values_df_20 <- values_df_20[complete.cases(values_df_20$V2020), ]
   
   list <- list()
   list[[1]] <- values_df_70
@@ -160,6 +162,7 @@ random_sampling <- function(x, small_ext = FALSE){
 }
 
 
+# This function randomly samples 1000 chips 1000 times and summarizes OHV density information, combining classes medium and high
 random_sampling3 <- function(x, small_ext = FALSE){
 
         if(small_ext){
@@ -167,16 +170,16 @@ random_sampling3 <- function(x, small_ext = FALSE){
         }
   
       values_df_70 <- x[,c(2,6)]
-      values_df_70 <- values_df_70[complete.cases(values_df_70$V70), ]
+      values_df_70 <- values_df_70[complete.cases(values_df_70$V1970), ]
       
       values_df_80 <- x[,c(3,6)]
-      values_df_80 <- values_df_80[complete.cases(values_df_80$V80), ]
+      values_df_80 <- values_df_80[complete.cases(values_df_80$V1980), ]
       
       values_df_10 <- x[,c(4,6)]
-      values_df_10 <- values_df_10[complete.cases(values_df_10$V10), ]
+      values_df_10 <- values_df_10[complete.cases(values_df_10$V2010), ]
       
       values_df_20 <- x[,c(5,6)]
-      values_df_20 <- values_df_20[complete.cases(values_df_20$V20), ]
+      values_df_20 <- values_df_20[complete.cases(values_df_20$V2020), ]
       
       list <- list()
       list[[1]] <- values_df_70
@@ -266,8 +269,10 @@ random_sampling3 <- function(x, small_ext = FALSE){
 
 
 
-## Cleaning functions
+### Cleaning functions -----
 
+# This function identifies cells with a value of low, med, or high and are surrounded
+# by none and changes these values to none
 gol_fun <- function(x) {
   
   #Get the center cell
@@ -292,13 +297,14 @@ gol_fun <- function(x) {
   }
 }
 
-# Create the function saltNpepper
+# This function applies the function gol_fun within a moving window
 saltNpepper <- function(x) {
   foc_mat<-matrix(c(1,1,1,1,1,1,1,1,1), nrow=3)
   f <- focal(x, w=foc_mat, fun=gol_fun)
 }
 
 
+# This function applies the saltNpepper mask to clean the OHV layers
 # Apply to a rasterstack
 salt_clean <- function(x,writeR = FALSE){
   for (i in 1:nlyr(x)){
@@ -316,9 +322,8 @@ salt_clean <- function(x,writeR = FALSE){
 }
 
 
-
+# This function masks each OHV density layer with the correct NLCD mask (water and developed low medium and high, NLCD)
 # Apply to a rasterstack
-
 nlcd_mask <- function(x, writeR = FALSE){
   masks <- list.files("./other_data/masks/NLCD", recursive = TRUE, full.names = TRUE, pattern = "n21")
   for (i in 1:nlyr(x)){
@@ -334,6 +339,8 @@ nlcd_mask <- function(x, writeR = FALSE){
   return(x)
 }
 
+# This function masks each OHV density layer with the correct TIGER roads mask (S1100, S1200 and S1400)
+# Apply to a rasterstack
 roads_mask <- function(x, writeR = FALSE){
   masks <- list.files("./other_data/masks/TIGER", recursive = TRUE, full.names = TRUE)
   masks <- c(masks[1],masks) # Need to repeat the 1992 roads mask for the 1970s
@@ -350,7 +357,7 @@ roads_mask <- function(x, writeR = FALSE){
   return(x)
 }
 
-
+# This function masks out cells for which there is not an OHV density estimate in each decade
 small_ex_mask <- function(x, writeR = FALSE){
   mask <- rast("./other_data/masks/small_ext.tif")
   for (i in 1:nlyr(x)){
@@ -367,11 +374,7 @@ small_ex_mask <- function(x, writeR = FALSE){
 
 
 
-
-
-
-
-# Moving window function
+### Moving window functions -----
 
 sum_window <- function(x, radius = 400, writeR = FALSE){
   for(i in 1:nlyr(x)){
@@ -408,3 +411,19 @@ mode_window <- function(x, radius = 400, writeR = FALSE){
   return(x)
 }
 
+max_window <- function(x, radius = 400, writeR = FALSE){
+  for(i in 1:nlyr(x)){
+    raster <- x[[i]]
+    focal_num<-radius
+    focal_shape<-'circle'
+    foc_mat<-focalMat(raster, focal_num, focal_shape, fillNA= TRUE) #matrix for use in focal function. change number based on what radius of circle should be
+    foc_mat[foc_mat>0] <- 1
+    raster_foc <-focal(raster, foc_mat, fun = "max", na.policy = "all", na.rm = TRUE)
+    names(raster_foc) <- paste0(names(raster),"_focmax_",radius)
+    if(writeR){
+      writeRaster(raster_foc, file = paste0("./output_layers/",names(raster_foc),".tif"),overwrite = TRUE)
+    }
+    x[[i]] <- raster_foc
+  }
+  return(x)
+}

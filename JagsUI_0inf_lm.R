@@ -4,26 +4,23 @@
 rm(list=ls())
 options(scipen=999)
 
-# Load packages and function
-library(lubridate)
-library(jagsUI)
-library(parallel)
-library(terra)
-library(tidyverse)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(sf)
+## Loading in packages -----
+list.of.packages <- c("tidyverse","lubridate","terra","sf","dplyr", "jagsUI",
+                      "parallel","ggeffects","tidyr","stringr","pscl")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only = TRUE)
+
 
 # Load the functions used to process telemetry and estimate survival
 source("./GLMM_jags_functions.R")
 
 # Reading in the dataframe with cell values
-values_df <- st_read("./other_data/master/master_cells.shp")
+# values_df <- st_read("./other_data/master/master_cells.shp")
 
-# values_df_cleaned <- st_read("./other_data/master/master_cells_cleaned.shp")
-# values_df <- values_df_cleaned
-# head(values_df)
+values_df_cleaned <- st_read("./other_data/master/master_cells_cleaned.shp")
+values_df <- values_df_cleaned
+head(values_df)
 
 # Choosing columns
 names(values_df) <- c("1970","1980","2010","2020","rstr_cl","grd_cll","state","geometry")
@@ -39,12 +36,14 @@ values_df_long <- values_df %>%
 # Removing rows with no OHV value in that year
 values_df_long <- values_df_long[complete.cases(values_df_long$value), ]
 
+values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")
+
 
 # Seeing how many cells comprise different % of data
 # nrow(values_df)*.001
 
 # Randomly sampling cell IDs
-sampled_values <- sample(unique(values_df_long$rstr_cl), nrow(values_df)*.01, replace = FALSE) # 10% of the data
+sampled_values <- sample(unique(values_df_long$rstr_cl), nrow(values_df)*.0001, replace = FALSE) # 10% of the data
 
 # Subsetting the data to those randomly sampled IDs
 values_df_sub <- values_df_long %>% filter(rstr_cl %in% sampled_values)
@@ -104,14 +103,24 @@ data <- st_drop_geometry(data)
 write.csv(data ,"./models/0inf_jagsUI/Data_for_jags.csv")
 
 
+data <- read.csv("./models/0inf_jagsUI/Data_for_jags.csv")
+
+# Checking dispersion of the data
+mean_count <- mean(data$value, na.rm = TRUE)
+var_count <- var(data$value, na.rm = TRUE)
+dispersion_index <- var_count / mean_count
+dispersion_index #2.191
+
+hist(data$value)
+
+source("./GLMM_jags_functions.R")
+
 # Prepare the data for model
 dfj_t <- PrepDataForJAGS_glm_OHV()
 
 # Select the model to run
-
-
 bugsname <- WriteJAGS_year_sc_rasterRE_gridRE_zip()
-# bugsname <- WriteJAGS_year_sc_rasterRE_gridRE_nb()
+# bugsname <- WriteJAGS_year_sc_rasterRE_gridRE_zinb()
 
 
 # Specify values for model run
@@ -139,8 +148,23 @@ system.time(
 # Examine the results
 print(mod_ohv)
 
-exp(mod_ohv$mean$beta1)
-
 # Save the telemetry data object and model results
 # saveRDS(dfj_t, "./models/0inf_jagsUI/output/data_start.s_change_cat.RDS")
-saveRDS(mod_ohv, "./models/0inf_jagsUI/output/model.01zip.RDS")
+saveRDS(mod_ohv, "./models/0inf_jagsUI/output/model.0001zip.RDS")
+
+mod_ohv <- readRDS("./models/0inf_jagsUI/output/model.0001zip.RDS")
+print(mod_ohv$summary)
+
+# For every 1 year increase
+exp(mod_ohv$mean$beta1 * sd(data$year))
+exp(mod_ohv$q2.5$beta1 * sd(data$year))
+exp(mod_ohv$q97.5$beta1 * sd(data$year))
+
+exp(mod_ohv$mean$beta1)
+
+mod_001 <- readRDS("./models/0inf_jagsUI/output/model.001zip.RDS")
+
+
+# mod_01 <- readRDS("./models/0inf_jagsUI/output/model.01zip.RDS")
+# print(mod_01)
+

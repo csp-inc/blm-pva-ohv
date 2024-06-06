@@ -24,10 +24,10 @@ names(stack) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
 
 plot(stack,main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 
-writeRaster(stack[[1]],"./output_layers/n70_04052024.tif", overwrite = TRUE)
-writeRaster(stack[[2]],"./output_layers/n80_04052024.tif", overwrite = TRUE)
-writeRaster(stack[[3]],"./output_layers/N10_04052024.tif", overwrite = TRUE)
-writeRaster(stack[[4]],"./output_layers/N20_04052024.tif", overwrite = TRUE)
+writeRaster(stack[[1]],"./output_layers/n70.tif", overwrite = TRUE)
+writeRaster(stack[[2]],"./output_layers/n80.tif", overwrite = TRUE)
+writeRaster(stack[[3]],"./output_layers/N10.tif", overwrite = TRUE)
+writeRaster(stack[[4]],"./output_layers/N20.tif", overwrite = TRUE)
 
 # Create binary raster stack and then run both categorical and binary layers through ohv sum with radius 400m and radius 200m
 
@@ -36,10 +36,24 @@ names(stack_binary) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
 
 plot(stack_binary, main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 
-writeRaster(stack_binary[[1]],"./output_layers/n70_bin_04052024.tif", overwrite = TRUE)
-writeRaster(stack_binary[[2]],"./output_layers/n80_bin_04052024.tif", overwrite = TRUE)
-writeRaster(stack_binary[[3]],"./output_layers/N10_bin_04052024.tif", overwrite = TRUE)
-writeRaster(stack_binary[[4]],"./output_layers/N20_bin_04052024.tif", overwrite = TRUE)
+writeRaster(stack_binary[[1]],"./output_layers/n70_bin.tif", overwrite = TRUE)
+writeRaster(stack_binary[[2]],"./output_layers/n80_bin.tif", overwrite = TRUE)
+writeRaster(stack_binary[[3]],"./output_layers/N10_bin.tif", overwrite = TRUE)
+writeRaster(stack_binary[[4]],"./output_layers/N20_bin.tif", overwrite = TRUE)
+
+
+stack_high <- classify(stack, cbind(0, 3, 0), right=FALSE)
+stack_high <- classify(stack_high, cbind(4, 5, 1), right=FALSE)
+
+names(stack_high) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
+
+plot(stack_high, main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
+
+writeRaster(stack_high[[1]],"./output_layers/n70_high.tif", overwrite = TRUE)
+writeRaster(stack_high[[2]],"./output_layers/n80_high.tif", overwrite = TRUE)
+writeRaster(stack_high[[3]],"./output_layers/N10_high.tif", overwrite = TRUE)
+writeRaster(stack_high[[4]],"./output_layers/N20_high.tif", overwrite = TRUE)
+
 
 # Uploaded to data > 05 covariate outputs > OHV
 

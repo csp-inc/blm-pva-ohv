@@ -17,15 +17,18 @@ lapply(list.of.packages, require, character.only = TRUE)
 # N2010 <- rast("./output_layers/N10_04052024.tif")
 # N2020 <- rast("./output_layers/N20_04052024.tif")
 
-# n1970 <- rast("./output_layers/netr_1970_masked_9.tif")
-# n1980 <- rast("./output_layers/netr_1980_masked_9.tif")
-# N2010 <- rast("./output_layers/NAIP_2010_masked_9.tif")
-# N2020 <- rast("./output_layers/NAIP_2020_masked_9.tif")
-
+# Creates cleaned 3
 n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask_roadsmask.tif")
 n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
 N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask_roadsmask.tif")
 N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+
+
+n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask.tif")
+n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask.tif")
+N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask.tif")
+N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask.tif")
+
 
 # Stacking
 stack <- c(n1970,n1980,N2010,N2020)
@@ -89,9 +92,11 @@ unique(values_df$V70)
 names(values_df) <- c("V1970","V1980","V2010","V2020","raster_cell","grid_cell","state","geometry")
 
 ### Part 4: Saving outputs -----
-# Saving as a shapefile with geometry
-if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
-st_write(values_df,"./other_data/master/master_cells_cleaned.shp",append=FALSE)
+# NOTE: change the name of these files to reflect which layers were used to create it
+
+# # Saving as a shapefile with geometry
+# if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
+# st_write(values_df,"./other_data/master/master_cells_cleaned3.shp",append=FALSE)
 
 # Removing geometry to save as a .csv
 values_df_no_geom <- as.data.frame(values_df[,-8])

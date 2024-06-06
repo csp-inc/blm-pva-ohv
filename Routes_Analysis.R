@@ -3,7 +3,7 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("googleAuthR","googleCloudStorageR","terra","sf","dplyr", "performance",
-                      "stars","ggeffects","MASS","DHARMa","pscl","AICcmodavg","lmtest")
+                      "stars","ggeffects","MASS","DHARMa","pscl","AICcmodavg","lmtest","ggplot2")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -88,6 +88,10 @@ trail_df_model <- trail_df_model[complete.cases(trail_df_model), ]
 # write.csv(trail_df_model,"./other_data/routes/routes_data_model.csv", row.names = FALSE)
 write.csv(trail_df_model,"./other_data/routes/routes_data_cleaned_model.csv", row.names = FALSE)
 
+nrow(trail_df_model)*150*150 # 2528302500 = total area in m2
+
+st_area(dt_range_web)
+(2528302500/2.49582e+11)*100 # 1.01 = % of mdt range in analysis
 
 ## Part I: WEMO known OHV routes analysis -----
 # Load in the saved model data
@@ -135,7 +139,7 @@ exp(CI[1])
 exp(CI[2])
 
 
-new_data_test <- data.frame(routes_length = c(0,50,100,150,200,250,300,350,400,450,500,550,600,650))
+new_data_test <- data.frame(routes_length = c(0,50,100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,525,550,575,600,625,650))
 
 pred_dat <- predict_response(ord_model, terms = new_data_test)
 
@@ -164,387 +168,23 @@ plot1 <- ggplot(data = pred_dat, aes(x = x, y = predicted, colour = factor(OHV.d
 plot1
 
 
-ggsave("./routes_figure.jpeg")
+class_list <- split(pred_dat,pred_dat$response.level)
+function_list <- list()
+for(i in 2:4){
+  function_list[[i-1]] <- approxfun(class_list[[i]]$x,class_list[[i]]$predicted)
+}
 
-#### poisson -----
-model <- glm(OHV_dens ~ routes_length, data = trail_df_model, family = "poisson")
-summary(model)
-
-AIC(model)
-AICc(model)
-BIC(model)
-exp(model$coefficients)
--2*logLik(model)
-
-
-exp(model$coefficients) #IRR
-
-# For each 100m increase in road...
-exp(model$coefficients*100)
-exp(confint(model)[2,1]*100)
-exp(confint(model)[2,2]*100)
-
-saveRDS(model,"./models/Routes/model_WEMO_pois.RDS")
-
-model <- readRDS("./models/Routes/model_WEMO_pois.RDS")
-
-# From DARMa package
-# Generating residuals
-model_resid <- simulateResiduals(fittedModel = model, plot = F)
-
-plot(model_resid)
-testOutliers(model,type = 'bootstrap') 
-testDispersion(model_resid) # Model is overdispersed (1.6)
-testZeroInflation(model_resid) # model is 0-inflated (underfitting, 1.3)
-
-routes_length_fake <- seq(min(trail_df_model$routes_length, na.rm = TRUE), max(trail_df_model$routes_length, na.rm = TRUE), length.out = 25)
-
-new_data_test <- data.frame(routes_length = c(0.001933,78.360526,156.719120,235.077714,313.436308,391.794901,470.153495,548.512089,626.870683))
-
-pred_dat <- predict_response(model, terms = new_data_test)
-plot1.1 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Poisson")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.1
-
-#### negative binomial -----
-# https://stats.oarc.ucla.edu/r/dae/negative-binomial-regression/#:~:text=Negative%20binomial%20regression%20analysis,estimate%20a%20negative%20binomial%20regression.&text=R%20first%20displays%20the%20call,scores%2C%20and%20p%2Dvalues.
-# https://rdrr.io/cran/lme4/man/glmer.nb.html
-
-model_nb <- glm.nb(OHV_dens ~ routes_length, data = trail_df_model)
-summary(model_nb)
-saveRDS(model_nb,"./models/Routes/model_WEMO_nb.RDS")
-
-AIC(model_nb)
-AICc(model_nb)
-BIC(model_nb)
-exp(model_nb$coefficients)
--2*logLik(model_nb)
-
-
-exp(model_nb$coefficients) # IRR
-
-# For each 100m increase in road...
-exp(model_nb$coefficients*100)
-exp(confint(model_nb)[2,1]*100)
-exp(confint(model_nb)[2,2]*100)
-
-model_nb <- readRDS("./models/Routes/model_WEMO_nb.RDS")
-
-# Likelihood ratio test
-lrtest(model, model_nb) # neg binomial better than poisson
-
-testOutliers(model_nb,type = 'bootstrap') 
-
-model_nb_resid <- simulateResiduals(fittedModel = model_nb, plot = F)
-# a non-parametric test that compares the variance of the simulated residuals to the observed residuals
-
-testDispersion(model_nb_resid) # underdispersed ( 0.98) but not significantly
-testZeroInflation(model_nb_resid) # not 0-inflated
-
-plotQQunif(simulationOutput = model_nb_resid, 
-           testDispersion = FALSE,
-           testUniformity = FALSE,
-           testOutliers = FALSE)
-
-ggsave("./routes_qq.jpeg")
-
-# Using GGpredict
-pred_dat <- predict_response(model_nb, terms = new_data_test)
-plot1.2 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Negative Binomial")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.2
+x <- c(0,50,100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,525,550,575,600,625,650)
+low_med <- uniroot(function(x)  function_list[[1]](x) - function_list[[2]](x)  , c(0,400), tol=1e-8)     #214
+med_high <- uniroot(function(x)  function_list[[2]](x) - function_list[[3]](x)  , c(0,400), tol=1e-8)    #392 
 
 ggsave("./routes_figure.jpeg")
-
-#### quasi-poisson -----
-# https://www.utstat.toronto.edu/~guerzhoy/303/lec/lec9/binomial_poisson.html
-# Lets the variance of poisson increase
-
-model_qp <- glm(OHV_dens ~ routes_length, data = trail_df_model, family = "quasipoisson")
-summary(model_qp)
-
-exp(model_qp$coefficients)
-
-AIC(model_qp)
-AICc(model_qp)
-BIC(model_qp)
--2*logLik(model_qp)
-
-saveRDS(model_qp,"./models/Routes/model_WEMO_nb.RDS")
-
-pred_dat <- predict_response(model_qp, terms = new_data_test)
-plot1.3 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Quasi-Poisson")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.3
-
-check_overdispersion(model_qp) # overdispersion (1.358)
-check_zeroinflation(model_qp) # underfitting 0s
-# AIC = NA
-
-# Cannot compare to other models so excluding this as an option
-
-
-#### 0-inflated models -----
-###### Poisson -----
-model_ZIP <- zeroinfl(OHV_dens ~ routes_length | ## Predictor for the Poisson process
-                        routes_length, ## Predictor for the Bernoulli process;
-                      dist = 'poisson',
-                      data = trail_df_model)
-
-summary(model_ZIP)
-saveRDS(model_ZIP,"./models/Routes/model_WEMO_zip.RDS")
-
-# Dispersion statistic
-E2 <- resid(model_ZIP, type = "pearson")
-N  <- nrow(trail_df_model)
-p  <- length(coef(model_ZIP))  
-sum(E2^2) / (N - p) #1.023
-
-
-AIC(model_ZIP)
-AICc(model_ZIP)
-BIC(model_ZIP)
--2*logLik(model_ZIP)
-
-exp(model_ZIP$coefficients$count) ## IRR = 1.001
-
-exp(model_ZIP$coefficients$zero) ## OR = 0.9896
-exp(model_ZIP$coefficients$zero)
-
-pred_dat <- predict_response(model_ZIP, terms = new_data_test)
-plot1.4 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Zero Inflated Poisson")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.4
-
-plot(residuals(model_ZIP, type = "pearson") ~ fitted(model_ZIP))
-expected_ZIP <- predict(model_ZIP, type = "response")
-hist(expected_ZIP)
-hist(trail_df_model$OHV_dens)
-
-# vuong test
-vuong(model_nb,model_ZIP)
-# zero inflated poisson better (p < 0.0000000000000002)
-
-###### negative binomial -----
-# https://stats.oarc.ucla.edu/r/dae/zinb/
-model_ZINB <- zeroinfl(OHV_dens ~ routes_length |
-                            routes_length,
-                          dist = 'negbin',
-                          data = trail_df_model)
-summary(model_ZINB)
-saveRDS(model_ZINB,"./models/Routes/model_WEMO_zinb.RDS")
-
-# Dispersion statistic
-E2 <- resid(model_ZINB, type = "pearson")
-N  <- nrow(trail_df_model)
-p  <- length(coef(model_ZINB)) + 1 # '+1' is due to theta
-sum(E2^2) / (N - p) # 1.005
-
-# Extract residuals
-E2  <- residuals(model_ZINB, type = "pearson")  # Choose the appropriate type of residuals
-# Compute quantile residuals manually
-quantile_residuals <- qnorm(pnorm(E2))
-
-
-testDispersion(quantile_residuals)
-str()
-
-# Calculate the degrees of freedom
-n_obs <- length(E2)  # Number of observations
-n_params <- length(coef(model_ZINB))  # Number of parameters estimated in the model
-df <- n_obs - n_params  # Degrees of freedom
-
-# Calculate the p-value using the Pearson's chi-squared statistic
-pearson_chi_squared <- sum((E2 / sqrt(18.016 ))^2)  # Pearson's chi-squared statistic
-p_value <- pchisq(pearson_chi_squared, df, lower.tail = FALSE)  # Calculate p-value
-
-# Print the result
-print(p_value)
-
-
-# log(theta) = 2.891249
-
-AIC(model_ZINB)
-AICc(model_ZINB)
-BIC(model_ZINB)
--2*logLik(model_ZINB)
-
-new_data_test <- data.frame(routes_length = c(0.001933,78.360526,156.719120,235.077714,313.436308,391.794901,470.153495,548.512089,626.870683,705.229276,783.587870))
-
-pred_dat <- predict_response(model_ZINB, terms = new_data_test)
-plot1.5 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Zero Inflated Negative Binomial")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.5
-
-exp(model_ZINB$coefficients$count) ## IRR = 1.001
-exp(model_ZINB$coefficients$count*100) ## for every 100 road density, 1.152 times as many predicted OHV routes
-exp(confint(model_ZINB)[2,1]*100)
-exp(confint(model_ZINB)[2,2]*100)
-
-model_ZINB$coefficients$zero
-exp(model_ZINB$coefficients$zero) ## OR = 0.9912 
-exp(model_ZINB$coefficients$zero*100) ## for every 100 road density, 0.3339 increase in odds
-exp(confint(model_ZINB)[4,1]*100)
-exp(confint(model_ZINB)[4,2]*100)
-
-
-# Likelihood ratio test
-lrtest(model_ZIP, model_ZINB) # neg binomial is better than poisson
-
-# vuong test
-vuong(model_ZIP, model_ZINB)
-# Negative binomial better (p = 0.0072)
-
-plot(residuals(model_ZINB, type = "pearson") ~ fitted(model_ZINB))
-expected_ZINB <- predict(model_ZINB, type = "response")
-
-hist(expected_ZINB)
-hist(trail_df_model$OHV_dens)
-
-
-
-# Links for reporting of ZINB
-# https://stats.oarc.ucla.edu/r/dae/zinb/
-# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7880198/#:~:text=The%20Zero%2DInflated%20Negative%20Binomial%20Model,under%20a%20standard%20count%20model.
-
-
-#### Hurdle models -----
-# https://search.r-project.org/CRAN/refmans/pscl/html/hurdle.html
-# Positive coefficients in the hurdle component indicate that an increase in 
-# the regressor increases the probability of a non-zero count.
-
-# Dont assume that excess 0s are product of two processes
-
-###### poisson -----
-model_hurdle_pois <- hurdle(OHV_dens ~ routes_length |
-                            routes_length,
-                          dist = 'poisson',
-                          data = trail_df_model)
-summary(model_hurdle_pois)
-
-
-AIC(model_hurdle_pois)
-AICc(model_hurdle_pois)
-BIC(model_hurdle_pois)
--2*logLik(model_hurdle_pois)
-
-exp(model_hurdle_pois$coefficients$count)
-exp(model_hurdle_pois$coefficients$zero)
-
-
-# Dispersion index
-E2 <- resid(model_hurdle_pois, type = "pearson")
-N  <- nrow(trail_df_model)
-p  <- length(coef(model_hurdle_pois))  
-sum(E2^2) / (N - p) #1.014
-
-
-pred_dat <- predict_response(model_hurdle_pois, terms = new_data_test)
-plot1.6 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Poisson Hurdle model")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.6
-
-###### geometric poisson -----
-model_hurdle_geom <- hurdle(OHV_dens ~ routes_length |
-                              routes_length,
-                            dist = 'geometric',
-                            data = trail_df_model)
-summary(model_hurdle_geom)
-
-pred_dat <- predict_response(model_hurdle_geom, terms = new_data_test)
-plot1.7 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Geometric Poisson Hurdle model")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.7
-
-
-# Testing which hurdle models perform best in lrtest
-lrtest(model_hurdle_pois,model_hurdle_geom) #poisson is better than geometric poisson
-
-###### Negative binomial -----
-model_hurdle_nb <- hurdle(OHV_dens ~ routes_length |
-                            routes_length,
-                          dist = 'negbin', link = "logit",
-                          data = trail_df_model)
-summary(model_hurdle_nb)
-
-AIC(model_hurdle_nb)
-AICc(model_hurdle_nb)
-BIC(model_hurdle_nb)
--2*logLik(model_hurdle_nb)
-
-# Dispersion index
-E2 <- resid(model_hurdle_nb, type = "pearson")
-N  <- nrow(trail_df_model)
-p  <- length(coef(model_hurdle_nb))  
-sum(E2^2) / (N - p) #1.014
-
-
-# log(theta) = 6.2182821
-
-exp(model_hurdle_nb$coefficients$count)
-exp(model_hurdle_nb$coefficients$zero)
-model_hurdle_nb$coefficients$zero*100
-
-exp(model_hurdle_nb$coefficients$count*100)
-exp(model_hurdle_nb$coefficients$zero*100)
-
-exp(confint(model_hurdle_nb)[2,1]*100)
-exp(confint(model_hurdle_nb)[2,2]*100)
-
-
-pred_dat <- predict_response(model_hurdle_nb, terms = new_data_test)
-plot1.8 <- ggplot(data = pred_dat, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) + ggtitle("Negative Binomial Hurdle model")+
-  xlab("Total known route length (m)")+ylab("Predicted OHV route abundance value") + theme_minimal()
-
-plot1.8
-
-# Likelihood ratio test
-lrtest(model_hurdle_pois,model_hurdle_nb) #no difference in poisson and neg binomial hurdle
-
-# Vuong test
-vuong(model_hurdle_pois,model_hurdle_nb) #no difference in poisson and neg binomial hurdle
-
-
-# Vuong test
-vuong(model_hurdle_pois,model_ZINB) #ZINB <0.0000000000000002
-
-vuong(model_hurdle_nb,model_ZINB) #ZINB <0.0000000000000002
-
-
-
-# Seems that ZINB is the best model for 0-inflated models
-summary(model_ZINB)
 
 
 ## Part II: Designated roads as predictors of model performance  -----
 # Getting Residuals (pearson, raw residuals standardized by the square root of the variance function)
-resid <- residuals(model_ZINB)
+resid <- residuals(ord_model)
 hist(resid)
-
-
 
 # Adding them to the data frame
 trail_df_model <- cbind(trail_df_model,resid)
@@ -619,6 +259,6 @@ plot2
 plot(trail_df_resid$road_dist,trail_df_resid$resid)
 
 library(gridExtra)
-grid.arrange(plot1.3, plot2, ncol=2)
+grid.arrange(plot1, plot2, ncol=2)
 
 

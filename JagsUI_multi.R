@@ -20,7 +20,7 @@ source("./multi_jags_functions.R")
 
 
 # Read in dataframe
-values_df <- read.csv("./other_data/master/master_cells.csv")
+values_df <- read.csv("./other_data/master/master_cells_cleaned3.csv")
 values_df <- values_df[,-1]
 
 # Find the change between each decade time step (trend), and the starting value
@@ -83,6 +83,7 @@ rasterID_jags <- c(1:length(raster_cell))
 
 rasterkey <- as.data.frame(cbind(raster_cell,rasterID_jags))
 
+values_df_long$grid_cell <- paste0(values_df_long$grid_cell,values_df_long$change_class)
 grid_cell <- sort(c(unique(values_df_long$grid_cell)))
 gridID_jags <- c(1:length(grid_cell))
 
@@ -129,8 +130,11 @@ write.csv(data,"./models/multinomial_jagsUI/Data_for_jags.csv", row.names = FALS
 
 
 # Prepare the data for model
-dfj_t <- PrepDataForJAGS_multi_OHV()
+# dfj_t <- PrepDataForJAGS_multi_OHV()
 
+# dfj_t <- PrepDataForJAGS_multi_OHV_cat()
+
+dfj_t <- PrepDataForJAGS_multi_OHV_cat2()
 
 # Select the model to run
 
@@ -138,7 +142,11 @@ dfj_t <- PrepDataForJAGS_multi_OHV()
 
 # bugsname <- WriteJAGS_changecat_starts_rasterRE()
 
-bugsname <- WriteJAGS_changecat_starts_rasterRE_gridRE()
+# bugsname <- WriteJAGS_changecat_starts_rasterRE_gridRE()
+
+# bugsname <- WriteJAGS_changexstart_rasterRE_gridRE()
+
+bugsname <- WriteJAGS_change_start_rasterRE_gridRE()
 
 # Specify values for model run
 # nc <- 3; na <- 1000; ni <- 15000; nb <- 2000; nt <- 10 
@@ -165,6 +173,152 @@ system.time(
 # Examine the results
 print(mod_ohv)
 
+whiskerplot(mod_ohv,"alphaA")
+whiskerplot(mod_ohv,"betaB")
+whiskerplot(mod_ohv,"gammaC")
+
+whiskerplot(mod_ohv,"alpha")
+whiskerplot(mod_ohv,"beta")
+whiskerplot(mod_ohv,"gamma")
+
+whiskerplot(mod_ohv,"a")
+whiskerplot(mod_ohv,"b")
+whiskerplot(mod_ohv,"c")
+
+means <- as.data.frame(mod_ohv$mean[10:21])
+means<- as.data.frame(t(means))
+# means<- as.data.frame(means[13:24,1])
+colnames(means) <- "mean"
+means$start <- rep(c("None","Low","Medium","High"),3)
+means$change <- c("1970-1980","1970-1980","1970-1980","1970-1980",
+                  "1980-2010","1980-2010","1980-2010","1980-2010",
+                  "2010-2020","2010-2020","2010-2020","2010-2020")
+
+LCI <- as.data.frame(mod_ohv$q2.5[10:21])
+LCI<- as.data.frame(t(LCI))
+# LCI<- as.data.frame(LCI[13:24,1])
+colnames(LCI) <- "conf.lower"
+
+UCI <- as.data.frame(mod_ohv$q97.5[10:21])
+UCI<- as.data.frame(t(UCI))
+# UCI <- as.data.frame(UCI[13:24,1])
+colnames(UCI) <- "conf.upper"
+
+# colnames(means_exp) <- c("1970-1980","1980-2010","2010-2020")
+# means_exp$start <- rep(c("none","low","medium","high"),3)
+# 
+# means_exp_long <- means_exp %>% 
+#   pivot_longer(
+#     cols = c("1970-1980","1980-2010","2010-2020"), 
+#     names_to = "years",
+#     values_to = "coeff"
+#   )
+# 
+# 
+# colnames(LCI_exp) <- c("1970-1980","1980-2010","2010-2020")
+# LCI_exp$start <- c("none","low","medium","high")
+# 
+# LCI_exp_long <- LCI_exp %>% 
+#   pivot_longer(
+#     cols = c("1970-1980","1980-2010","2010-2020"), 
+#     names_to = "years",
+#     values_to = "LCI"
+#   )
+# 
+# colnames(UCI_exp) <- c("1970-1980","1980-2010","2010-2020")
+# UCI_exp$start <- c("none","low","medium","high")
+# 
+# UCI_exp_long <- UCI_exp %>% 
+#   pivot_longer(
+#     cols = c("1970-1980","1980-2010","2010-2020"), 
+#     names_to = "years",
+#     values_to = "UCI"
+#   )
+
+plot_dat <- as.data.frame(cbind(means,LCI,UCI))
+plot_dat_probinc <- filter(plot_dat,plot_dat$start != "High")
+legend_order <- c("None", "Low", "Medium")
+category_colors <- c("None" = "#a69d8b", "Low" = "#fae51e", "Medium" = "darkorange")
+
+pd <- position_dodge(0.1)
+Increase <- ggplot(plot_dat_probinc, aes(x=change, y=mean, colour=factor(start, levels = legend_order), group=factor(start,levels = legend_order))) + 
+  geom_errorbar(aes(ymin=conf.lower, ymax=conf.upper), colour="black", width=.1, position=pd) +
+  # geom_line(position=pd) + 
+  xlab("") + ylab("Probability of increase") +
+  scale_color_manual(values = category_colors, name = "Starting OHV route \ndensity category") +
+  geom_point(position=pd, size=3) +
+  theme_classic()
+
+plot(Increase)
+
+
+means <- as.data.frame(mod_ohv$mean)
+means_exp <- as.data.frame(t(exp(means)))
+means_exp <- means_exp[1:12,]
+
+LCI <- as.data.frame(mod_ohv$q2.5)
+LCI_exp <- as.data.frame(t(exp(LCI)))
+LCI_exp <- LCI_exp[1:12,]
+
+UCI <- as.data.frame(mod_ohv$q97.5)
+UCI_exp <- as.data.frame(t(exp(UCI)))
+UCI_exp <- UCI_exp[1:12,]
+
+colnames(means_exp) <- c("1970-1980","1980-2010","2010-2020")
+means_exp$start <- rep(c("None","Low","Medium","High"),3)
+means_exp$change <- c("Inc","Inc","Inc","Inc","Stable","Stable","Stable","Stable","Dec","Dec","Dec","Dec")
+
+means_exp_long <- means_exp %>% 
+  pivot_longer(
+    cols = c("1970-1980","1980-2010","2010-2020"), 
+    names_to = "years",
+    values_to = "coeff"
+  )
+
+
+colnames(LCI_exp) <- c("1970-1980","1980-2010","2010-2020")
+LCI_exp$start <- rep(c("None","Low","Medium","High"),3)
+LCI_exp$change <- c("Inc","Inc","Inc","Inc","Stable","Stable","Stable","Stable","Dec","Dec","Dec","Dec")
+
+LCI_exp_long <- LCI_exp %>% 
+  pivot_longer(
+    cols = c("1970-1980","1980-2010","2010-2020"), 
+    names_to = "years",
+    values_to = "LCI"
+  )
+
+colnames(UCI_exp) <- c("1970-1980","1980-2010","2010-2020")
+UCI_exp$start <- rep(c("None","Low","Medium","High"),3)
+UCI_exp$change <- c("Inc","Inc","Inc","Inc","Stable","Stable","Stable","Stable","Dec","Dec","Dec","Dec")
+
+UCI_exp_long <- UCI_exp %>% 
+  pivot_longer(
+    cols = c("1970-1980","1980-2010","2010-2020"), 
+    names_to = "years",
+    values_to = "UCI"
+  )
+
+plot_dat <- as.data.frame(cbind(means_exp_long,LCI_exp_long$LCI,UCI_exp_long$UCI))
+colnames(plot_dat) <- c("start","change","years","coeff","LCI","UCI")
+
+plot_dat_eff <- filter(plot_dat,plot_dat$start != "High")
+plot_dat_eff <- filter(plot_dat_eff,plot_dat_eff$change == "Inc")
+legend_order <- c("None", "Low", "Medium")
+category_colors <- c("None" = "#a69d8b", "Low" = "#fae51e", "Medium" = "darkorange")
+
+pd <- position_dodge(0.1)
+Effect <- ggplot(plot_dat_eff, aes(x=years, y=coeff, colour=factor(start, levels = legend_order), group=factor(start,levels = legend_order))) + #, shape = factor(change)
+  geom_errorbar(aes(ymin=LCI, ymax=UCI), colour="black", width=.1, position=pd) +
+  # geom_line(position=pd) + 
+  xlab("") + ylab("Effect") +
+  scale_color_manual(values = category_colors, name = "Starting OHV route \ndensity category") +
+  geom_point(position=pd, size=3) +
+  theme_classic()
+
+plot(Effect)
+
+
+
 # Save the telemetry data object and model results
-saveRDS(dfj_t, "./models/multinomial_jagsUI/output/data_start.s_change_cat.RDS")
-saveRDS(mod_ohv, "./models/multinomial_jagsUI/output/model_start.s_change_cat.RDS")
+saveRDS(dfj_t, "./models/multinomial_jagsUI/output/data_startxchange_cat.RDS")
+saveRDS(mod_ohv, "./models/multinomial_jagsUI/output/model_startxchange_cat.RDS")

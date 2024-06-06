@@ -9,13 +9,13 @@
         #process model
         
         #Increasae
-        log(p0[i,1]) <- alphaA[change_class[i]] + alpha * start_val_num_s[i] + rasterRE[raster[i]] 
+        log(p0[i,1]) <- a + alphaA[change_class[i]] + alpha[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
         
         #Stable
-        log(p0[i,2]) <- betaB[change_class[i]] + beta * start_val_num_s[i] + rasterRE[raster[i]]
+        log(p0[i,2]) <- b + betaB[change_class[i]] + beta[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
         
         #Decrease
-        log(p0[i,3]) <- gammaC[change_class[i]] + gamma * start_val_num_s[i] + rasterRE[raster[i]]  
+        log(p0[i,3]) <- c + gammaC[change_class[i]] + gamma[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
         
         for(j in 1:3){
         p[i,j]<-p0[i,j]/sum(p0[i, ])
@@ -24,52 +24,111 @@
    }
 
 #derived parameters
-log(p1_C1) <- (alpha * C1_start_mean) + alphaA[1]
-log(p1_C2) <- (alpha * C2_start_mean) + alphaA[2]
-log(p1_C3) <- (alpha * C3_start_mean) + alphaA[3]
+log(p1_C1_S1) <- a + alphaA[1] + alpha[1]
+log(p1_C1_S2) <- a + alphaA[1] + alpha[2]
+log(p1_C1_S3) <- a + alphaA[1] + alpha[3]
+log(p1_C1_S4) <- a + alphaA[1] + alpha[4]
 
-log(p2_C1) <- (beta * C1_start_mean) + betaB[1]
-log(p2_C2) <- (beta * C2_start_mean) + betaB[2]
-log(p2_C3) <- (beta * C3_start_mean) + betaB[3]
+log(p1_C2_S1) <- a + alphaA[2] + alpha[1]
+log(p1_C2_S2) <- a + alphaA[2] + alpha[2]
+log(p1_C2_S3) <- a + alphaA[2] + alpha[3]
+log(p1_C2_S4) <- a + alphaA[2] + alpha[4]
 
-log(p3_C1) <- (gamma * C1_start_mean) + gammaC[1]
-log(p3_C2) <- (gamma * C2_start_mean) + gammaC[2]
-log(p3_C3) <- (gamma * C3_start_mean) + gammaC[3]
+log(p1_C3_S1) <- a + alphaA[3] + alpha[1]
+log(p1_C3_S2) <- a + alphaA[3] + alpha[2]
+log(p1_C3_S3) <- a + alphaA[3] + alpha[3]
+log(p1_C3_S4) <- a + alphaA[3] + alpha[4]
+
+log(p2_C1_S1) <- b + betaB[1] + beta[1]
+log(p2_C1_S2) <- b + betaB[1] + beta[2]
+log(p2_C1_S3) <- b + betaB[1] + beta[3]
+log(p2_C1_S4) <- b + betaB[1] + beta[4]
+
+log(p2_C2_S1) <- b + betaB[2] + beta[1]
+log(p2_C2_S2) <- b + betaB[2] + beta[2]
+log(p2_C2_S3) <- b + betaB[2] + beta[3]
+log(p2_C2_S4) <- b + betaB[2] + beta[4]
+
+log(p2_C3_S1) <- b + betaB[3] + beta[1]
+log(p2_C3_S2) <- b + betaB[3] + beta[2]
+log(p2_C3_S3) <- b + betaB[3] + beta[3]
+log(p2_C3_S4) <- b + betaB[3] + beta[4]
+
+log(p3_C1_S1) <- c + gammaC[1] + gamma[1]
+log(p3_C1_S2) <- c + gammaC[1] + gamma[2]
+log(p3_C1_S3) <- c + gammaC[1] + gamma[3]
+log(p3_C1_S4) <- c + gammaC[1] + gamma[4]
+
+log(p3_C2_S1) <- c + gammaC[2] + gamma[1]
+log(p3_C2_S2) <- c + gammaC[2] + gamma[2]
+log(p3_C2_S3) <- c + gammaC[2] + gamma[3]
+log(p3_C2_S4) <- c + gammaC[2] + gamma[4]
+
+log(p3_C3_S1) <- c + gammaC[3] + gamma[1]
+log(p3_C3_S2) <- c + gammaC[3] + gamma[2]
+log(p3_C3_S3) <- c + gammaC[3] + gamma[3]
+log(p3_C3_S4) <- c + gammaC[3] + gamma[4]
 
 # Adding the probabilities for all trends for each change class
-sum_p_C1 <- sum(p1_C1, p2_C1, p3_C1)
-sum_p_C2 <- sum(p1_C2, p2_C2, p3_C2)
-sum_p_C3 <- sum(p1_C3, p2_C3, p3_C3)
+sum_p_C1_S1 <- sum(p1_C1_S1, p2_C1_S1, p3_C1_S1)
+sum_p_C1_S2 <- sum(p1_C1_S2, p2_C1_S2, p3_C1_S2)
+sum_p_C1_S3 <- sum(p1_C1_S3, p2_C1_S3, p3_C1_S3)
+sum_p_C1_S4 <- sum(p1_C1_S4, p2_C1_S4, p3_C1_S4)
+
+sum_p_C2_S1 <- sum(p1_C2_S1, p2_C2_S1, p3_C2_S1)
+sum_p_C2_S2 <- sum(p1_C2_S2, p2_C2_S2, p3_C2_S2)
+sum_p_C2_S3 <- sum(p1_C2_S3, p2_C2_S3, p3_C2_S3)
+sum_p_C2_S4 <- sum(p1_C2_S4, p2_C2_S4, p3_C2_S4)
+
+sum_p_C3_S1 <- sum(p1_C3_S1, p2_C3_S1, p3_C3_S1)
+sum_p_C3_S2 <- sum(p1_C3_S2, p2_C3_S2, p3_C3_S2)
+sum_p_C3_S3 <- sum(p1_C3_S3, p2_C3_S3, p3_C3_S3)
+sum_p_C3_S4 <- sum(p1_C3_S4, p2_C3_S4, p3_C3_S4)
+
 
 # Normalizing probabilities for each trend for each change class
 #Increase
-p1_C1_prob <- p1_C1/sum_p_C1
-p2_C1_prob <- p2_C1/sum_p_C1
-p3_C1_prob <- p3_C1/sum_p_C1
+p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+p1_C2_S1_prob <- p1_C2_S1/sum_p_C2_S1
+p1_C2_S2_prob <- p1_C2_S2/sum_p_C2_S2
+p1_C2_S3_prob <- p1_C2_S3/sum_p_C2_S3
+p1_C2_S4_prob <- p1_C2_S4/sum_p_C2_S4
+p1_C3_S1_prob <- p1_C3_S1/sum_p_C3_S1
+p1_C3_S2_prob <- p1_C3_S2/sum_p_C3_S2
+p1_C3_S3_prob <- p1_C3_S3/sum_p_C3_S3
+p1_C3_S4_prob <- p1_C3_S4/sum_p_C3_S4
 
-#Stable
-p1_C2_prob <- p1_C2/sum_p_C2
-p2_C2_prob <- p2_C2/sum_p_C2
-p3_C2_prob <- p3_C2/sum_p_C2
+# #Stable
+# p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+# p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+# p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+# p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+# 
+# #Decrease
+# p1_C3_prob <- p1_C3/sum_p_C3
+# p2_C3_prob <- p2_C3/sum_p_C3
+# p3_C3_prob <- p3_C3/sum_p_C3
 
-#Decrease
-p1_C3_prob <- p1_C3/sum_p_C3
-p2_C3_prob <- p2_C3/sum_p_C3
-p3_C3_prob <- p3_C3/sum_p_C3
 
-
-
-#priors
-alpha~dnorm(0,0.0001)
-beta~dnorm(0,0.0001)
-gamma~dnorm(0,0.0001)
-
-for(i in 1:3){ ## the fixed effect of start year
+# Priors for fixed effect
+for(i in 1:3){ 
   alphaA[i]~dnorm(0,1)
   betaB[i]~dnorm(0,1)
   gammaC[i]~dnorm(0,1)
 } 
 
+for(i in 1:4){ 
+  alpha[i]~dnorm(0,1)
+  beta[i]~dnorm(0,1)
+  gamma[i]~dnorm(0,1)
+} 
+
+a~dnorm(0,1)
+b~dnorm(0,1)
+c~dnorm(0,1)
 
 #priors for RE of raster cell id
 
@@ -79,9 +138,15 @@ for(i in 1:nCells){
   rasterRE[i] ~ dnorm(0, rasterRE.prec)
 }
 
-# for(i in 1:nCells){ 
-#   rasterRE[i]~dnorm(0,tau) #Random effects
-# } 
+ 
+#priors for RE of grid cell id
+
+gridRE.sd ~ dgamma(0.1, 0.1)
+gridRE.prec <- pow(gridRE.sd, -2)
+for(i in 1:nTiles){
+  gridRE[i] ~ dnorm(0, gridRE.prec)
+}
+
 
 
 }

@@ -1,22 +1,24 @@
 # This script creates plots for the OHV manuscript
-
+rm(list=ls())
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","ggplot2","ggeffects")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
+# This script contains functions that summarize the OHV route density layers in different ways
 source("./Functions.R")
 
 # Loads in the mdt range
 dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
-
+st_area(dt_range) # 2.49582e+11 [m^2]
 
 ### Figure 3 -----
 # Loads in csv created in script "Master_creation.R"
-values_sample <- read.csv("./other_data/master/master_cells_cleaned.csv")
+values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
 
+# Randomly samples 1000 cells 1000 times from areas that have estiamtes in all decades
 final_random <- random_sampling(values_sample,small_ext = TRUE)
 
 year_order <- c("V1970","V1980","V2010","V2020")
@@ -34,52 +36,135 @@ final_random %>%
                                                                                                                                                    axis.text.y = element_text(color = "black",size=12),legend.title = element_text(face = "bold",size=12),
                                                                                                                                                    axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
                                                                                                                                                    legend.text = element_text(color="black",size=12))
-ggsave(filename = "./figure_3.jpeg",height = 7.5, width = 10)
+ggsave(filename = "./figure_3.jpeg",height = 7, width = 7.7)
+
+# # Random sampling and combining categories medium and high
+# 
+# final_random3 <- random_sampling3(values_df,small_ext = TRUE)
+# 
+# year_order <- c("V1970","V1980","V2010","V2020")
+# final_random3 %>%
+#   ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
+#   geom_col(position = "dodge")+
+#   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
+#                 position = position_dodge(0.9), width = .3)+
+#   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
+#   ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
+#   geom_text(size = 3, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
+#   scale_fill_manual(values = c("#a69d8b","#fae51e","#ff681e"),labels=c("None", "Low","Medium/High"),name="OHV route\ndensity category") +
+#   theme(axis.title.x = element_blank(), legend.position = "right")+
+#   scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
+#                                                                                                                                                    axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
+# 
+# ggsave(filename = "./figure_3.1.jpeg",height = 7.5, width = 10)
+
+
+### No longer used -----
+
+# ## Using consistent extent to calculate OHV route length stats for each year
+# values_df <- read.csv("./other_data/master/master_cells_cleaned3.csv")
+# 
+# values_const <- values_df[complete.cases(values_df), ]
+# 
+# values_const <- values_const %>%
+#   mutate(V1970_mean = case_when(V1970 == 1 ~ 75,
+#                            V1970 == 2 ~ 300, 
+#                            V1970 == 4 ~ 74044,
+#                            TRUE ~ V1970))
+# values_const <- values_const %>%
+#   mutate(V1980_mean = case_when(V1980 == 1 ~ 75,
+#                            V1980 == 2 ~ 300, 
+#                            V1980 == 4 ~ 74044,
+#                            TRUE ~ V1980))
+# values_const <- values_const %>%
+#   mutate(V2010_mean = case_when(V2010 == 1 ~ 75,
+#                            V2010 == 2 ~ 300, 
+#                            V2010 == 4 ~ 74044,
+#                            TRUE ~ V2010))
+# values_const <- values_const %>%
+#   mutate(V2020_mean = case_when(V2020 == 1 ~ 75,
+#                            V2020 == 2 ~ 300, 
+#                            V2020 == 4 ~ 74044,
+#                            TRUE ~ V2020))
+# 
+# values_const <- values_const %>%
+#   mutate(V1970_min = case_when(V1970 == 1 ~ 1,
+#                                 V1970 == 2 ~ 151, 
+#                                 V1970 == 4 ~ 451,
+#                                 TRUE ~ V1970))
+# values_const <- values_const %>%
+#   mutate(V1980_min = case_when(V1980 == 1 ~ 1,
+#                                 V1980 == 2 ~ 151, 
+#                                 V1980 == 4 ~ 451,
+#                                 TRUE ~ V1980))
+# values_const <- values_const %>%
+#   mutate(V2010_min = case_when(V2010 == 1 ~ 1,
+#                                 V2010 == 2 ~ 151, 
+#                                 V2010 == 4 ~ 451,
+#                                 TRUE ~ V2010))
+# values_const <- values_const %>%
+#   mutate(V2020_min = case_when(V2020 == 1 ~ 1,
+#                                 V2020 == 2 ~ 151, 
+#                                 V2020 == 4 ~ 451,
+#                                 TRUE ~ V2020))
+# 
+# values_const <- values_const %>%
+#   mutate(V1970_max = case_when(V1970 == 1 ~ 150,
+#                                V1970 == 2 ~ 450, 
+#                                V1970 == 4 ~ 147637,
+#                                TRUE ~ V1970))
+# values_const <- values_const %>%
+#   mutate(V1980_max = case_when(V1980 == 1 ~ 150,
+#                                V1980 == 2 ~ 450, 
+#                                V1980 == 4 ~ 147637,
+#                                TRUE ~ V1980))
+# values_const <- values_const %>%
+#   mutate(V2010_max = case_when(V2010 == 1 ~ 150,
+#                                V2010 == 2 ~ 450, 
+#                                V2010 == 4 ~ 147637,
+#                                TRUE ~ V2010))
+# values_const <- values_const %>%
+#   mutate(V2020_max = case_when(V2020 == 1 ~ 150,
+#                                V2020 == 2 ~ 450, 
+#                                V2020 == 4 ~ 147637,
+#                                TRUE ~ V2020))
+# 
+# 
+# mean_length <- colSums(values_const[,9:12])
+# min_length <- colSums(values_const[,13:16])
+# max_length <- colSums(values_const[,17:20])
+# 
+# decades <- c("1970","1980","2010","2020")
+# 
+# tot_length <- as.data.frame(cbind(mean_length,min_length,max_length))
+# 
+# tot_length <- cbind(tot_length,decades)
+# 
+# ggplot(tot_length , aes(x=decades, y=mean_length/1000)) + 
+#   geom_point(stat = "identity", color = "red") +ylab("Total OHV route length (km)") + xlab("Decade") +
+#   geom_errorbar(aes(ymin = min_length/1000, ymax = max_length/1000))+
+#                   theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
+#                                           legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
+#                                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))
+# 
+# 
+# ggsave(filename = "./figure_4.jpeg",height = 7.5, width = 10)
+# 
+# 
+# tot_length$year <- c(1979,1989,2012,2022)
+# 
+# year_mod <- lm(tot_length/1000~year, data = tot_length)
+# summary(year_mod)
+# 
+# year_response <- predict_response(year_mod, terms = "year[1960,1970,1980,1990,2000,2010,2020,2030]")
+# 
+# ggplot(data = year_response, aes(x = x, y = predicted))+
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
+#   geom_line(aes(y =predicted), size = 0.75) + xlab("Year") + ylab("Predicted total OHV route length (km)") +
+#   theme_minimal()
 
 
 ### Figure 4 -----
-
-## Using consistent extent to calculate OHV route length stats for each year
-
-values_const <- values_df[complete.cases(values_df), ]
-
-values_const <- values_const %>%
-  mutate(V1970 = case_when(V1970 == 2 ~ 151, 
-                           V1970 == 4 ~ 451,
-                           TRUE ~ V1970))
-values_const <- values_const %>%
-  mutate(V1980 = case_when(V1980 == 2 ~ 151, 
-                           V1980 == 4 ~ 451,
-                           TRUE ~ V1980))
-values_const <- values_const %>%
-  mutate(V2010 = case_when(V2010 == 2 ~ 151, 
-                           V2010 == 4 ~ 451,
-                           TRUE ~ V2010))
-values_const <- values_const %>%
-  mutate(V2020 = case_when(V2020 == 2 ~ 151, 
-                           V2020 == 4 ~ 451,
-                           TRUE ~ V2020))
-
-
-tot_length <- colSums(values_const[,2:5])
-
-decades <- c("1970s","1980s","2010s","2020s")
-
-tot_length <- as.data.frame(tot_length)
-
-tot_length <- cbind(tot_length,decades)
-
-ggplot(tot_length , aes(x=decades, y=tot_length/1000)) + 
-  geom_bar(stat = "identity") +ylab("Minimum total OHV route length (km)") + xlab("Decade") +theme_classic() + theme(axis.text.x = element_text(color="black",size=12),
-                                                                                                                     axis.text.y = element_text(color = "black",size=12),legend.title = element_text(face = "bold",size=12),
-                                                                                                                     axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
-                                                                                                                     legend.text = element_text(color="black",size=12))
-
-
-ggsave(filename = "./figure_4.jpeg",height = 7.5, width = 10)
-
-
-### Figure 5 -----
 
 # Loads in original layers created in scripts "Mosaick.R" and "Processing.R"
 n1970 <- rast("./output_layers/n70_04052024.tif")
@@ -93,6 +178,8 @@ stack <- c(n1970,n1980,N2010,N2020)
 salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
 stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = FALSE)
 stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = TRUE) # Saves layers
+
+# Figure was created in Q GIS
 
 ### Figure 6 -----
 # Loads in cleaned and masked layers for 1980s and 2020s
@@ -141,3 +228,133 @@ change_mean_masked <- mask(change_mean,mask, inverse = TRUE)
 writeRaster(change_mean_masked,"./output_layers/Change_Magnitude_1980_2020_cleaned.tif", overwrite = TRUE)
 
 plot(change_mean_masked)
+
+# Figure was created in Q GIS
+
+### Figure 7 -----
+
+#### 1) Sum of coverage over the 1000m cell -----
+habsuit_1000 <- rast("habsuit.tif") %>% project("EPSG:3857",res = 1000)
+habsuit_1000
+# hist(values(habsuit_1000))
+
+habsuit_1000_class <- classify(habsuit_1000, cbind(-1, .25, 100), right=TRUE)
+habsuit_1000_class <- classify(habsuit_1000_class, cbind(.25, .5, 200), right=TRUE)
+habsuit_1000_class <- classify(habsuit_1000_class, cbind(.5, .75, 300), right=TRUE)
+habsuit_1000_class <- classify(habsuit_1000_class, cbind(.75, 1, 400), right=FALSE)
+
+par(mfrow = c(1,2))
+plot(habsuit_1000_class)
+hist(values(habsuit_1000_class))
+# min(values(habsuit_class), na.rm = TRUE)
+dev.off()
+
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+N20_bin <- classify(N20, cbind(0, 4, 1), right=TRUE)
+unique(values(N20_bin))
+plot(N20_bin)
+
+N20_1km_bin_sum <- project(N20_bin,habsuit_1000, method = "sum")
+N20_1km_bin_sum
+plot(N20_1km_bin_sum)
+
+N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(-1, 1, 0), right=TRUE)
+N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(1, 11, 1), right=TRUE)
+N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(11, 22, 2), right=TRUE)
+N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(22, 33, 3), right=TRUE)
+N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(33, 45, 4), right=FALSE)
+
+combo_1km_bin_sum <- habsuit_1000_class-N20_1km_bin_sum
+
+writeRaster(combo_1km_bin_sum,"./output_layers/combo_1km_bin_sum.tif",overwrite = TRUE)
+# writeRaster(N20_1km_bin_sum,"./output_layers/N20_1km_bin_sum.tif",overwrite = TRUE)
+# writeRaster(habsuit_1000,"./output_layers/habsuit_1km.tif",overwrite = TRUE)
+
+#### 2) Sum of coverage over the 3000 m cell ------
+habsuit_3000 <- rast("habsuit.tif") %>% project("EPSG:3857",res = 3000)
+habsuit_3000
+# hist(values(habsuit_1000))
+
+habsuit_3000_class <- classify(habsuit_3000, cbind(-1, .25, 100), right=TRUE)
+habsuit_3000_class <- classify(habsuit_3000_class, cbind(.25, .5, 200), right=TRUE)
+habsuit_3000_class <- classify(habsuit_3000_class, cbind(.5, .75, 300), right=TRUE)
+habsuit_3000_class <- classify(habsuit_3000_class, cbind(.75, 1, 400), right=FALSE)
+
+par(mfrow = c(1,2))
+plot(habsuit_3000_class)
+hist(values(habsuit_3000_class))
+# min(values(habsuit_class), na.rm = TRUE)
+dev.off()
+
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+N20_bin <- classify(N20, cbind(0, 4, 1), right=TRUE)
+unique(values(N20_bin))
+plot(N20_bin)
+
+N20_3km_bin_sum <- project(N20_bin,habsuit_3000, method = "sum")
+N20_3km_bin_sum
+plot(N20_3km_bin_sum)
+
+N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(-1, 1, 0), right=TRUE)
+N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(1, 100, 1), right=TRUE)
+N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(100, 200, 2), right=TRUE)
+N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(200, 300, 3), right=TRUE)
+N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(300, 400, 4), right=FALSE)
+
+combo_3km_bin_sum <- habsuit_3000_class-N20_3km_bin_sum
+
+writeRaster(combo_3km_bin_sum,"./output_layers/combo_3km_bin_sum.tif",overwrite = TRUE)
+# writeRaster(N20_3km_bin_sum,"./output_layers/N20_3km_bin_sum.tif",overwrite = TRUE)
+# writeRaster(habsuit_3000,"./output_layers/habsuit_3km.tif",overwrite = TRUE)
+
+
+#### 3 & 4) Mode of 4 or 3 category 20s layer in 1000m cell -----
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+# N20_class <- classify(N20, cbind(1, 4, 3), right=TRUE)
+N20_class <- N20
+unique(values(N20_class))
+plot(N20_class)
+
+N20_1km_class_mode <- project(N20_class,habsuit_1000, method = "mode")
+N20_1km_class_mode
+plot(N20_1km_class_mode)
+
+
+combo_1km_class_mode <- habsuit_1000_class-N20_1km_class_mode
+writeRaster(combo_1km_class_mode,"./output_layers/combo_1km_class_sep_mode.tif",overwrite = TRUE)
+
+table(values(combo_1km_class_mode))
+
+1000*(40+434)
+
+#### 5) Intersection between original 150m 20s layer and habsuit -----
+habsuit <- rast("habsuit.tif") %>% project("EPSG:3857")
+
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+N20_high <- classify(N20, cbind(1, 5, 3), right=FALSE)
+N20_high <- classify(N20_high, cbind(-1, 2, NaN), right=TRUE)
+unique(values(N20_high))
+plot(N20_high)
+
+
+habsuit_150 <- project(habsuit,N20_high, method = "near")
+habsuit_150_high <- mask(habsuit_150,N20_high)
+plot(habsuit_150_high)
+writeRaster(habsuit_150_high,"./output_layers/habsuit_150_high.tif",overwrite = TRUE)
+
+
+
+habsuit <- rast("habsuit.tif") %>% project("EPSG:3857")
+
+N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+
+habsuit_class <- classify(habsuit, cbind(-1, .25, 100), right=TRUE)
+habsuit_class <- classify(habsuit_class, cbind(.25, .5, 200), right=TRUE)
+habsuit_class <- classify(habsuit_class, cbind(.5, .75, 300), right=TRUE)
+habsuit_class <- classify(habsuit_class, cbind(.75, 1, 400), right=FALSE)
+
+habsuit_class_150 <- project(habsuit_class,N20, method = "near")
+
+combo_150m_class_sep <- habsuit_class_150-N20
+writeRaster(combo_150m_class_sep,"./output_layers/combo_150m_class_sep.tif",overwrite = TRUE)
+

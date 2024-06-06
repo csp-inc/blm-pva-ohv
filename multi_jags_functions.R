@@ -113,7 +113,232 @@ PrepDataForJAGS_multi_OHV <- function(){
 }
 
 
+# Data prep functions
+PrepDataForJAGS_multi_OHV_cat <- function(){
+  
+  # Load in the saved dataframe
+  data <- read.csv("./models/multinomial_jagsUI/Data_for_jags.csv")
+  
+  ### Create objects that can be used for predict in the model
+  
+  # Categorical
+  N<-nrow(data)
+  TREND <- data$trendID_jags
+  raster <- data$rasterID_jags
+  grid <- data$gridID_jags
+  state <- data$stateID_jags
+  change_class <- data$change_classID_jags
+  start_val <- data$startID_jags
+  
+  # Matirx of responses
+  trend<-matrix(data = 0, nrow = N, ncol = 3)
+  for(i in 1:N){
+    for(j in 1:3){
+      if(isTRUE(TREND[i] == "1")) {trend[i,1]<-1}  
+      if(isTRUE(TREND[i] == "2")) {trend[i,2]<-1}
+      if(isTRUE(TREND[i] == "3")) {trend[i,3]<-1}
+    }
+  }
+  
+  # Numeric
+  start_val_num <- data$start_val
+  year_end <- data$change_end_year
+  
+  # Numeric scaled
+  start_val_num_s <-data$start_val_s
+  year_end_s <- data$year_end_s
+  
+  # Other data values needed for estimation
+  
+  nTiles <- length(unique(data$gridID_jags))
+  nCells <- length(unique(data$rasterID_jags))
+  
+  data_C1 <- data %>% filter(change_class == "C1") 
+  C1_start_mean <- mean(data_C1$start_val_s)
+  
+  data_C2 <- data %>% filter(change_class == "C2") 
+  C2_start_mean <- mean(data_C2$start_val_s)
+  
+  data_C3 <- data %>% filter(change_class == "C3") 
+  C3_start_mean <- mean(data_C3$start_val_s)
+  
+  # Predictions
+  # Create range of values for in-modeling predictions, both scaled and not scaled
+  year_predict <- as.numeric(seq(min(year_end_s), max(year_end_s), length.out = 50))
+  start_predict <- as.numeric(seq(min(start_val_num_s), max(start_val_num_s), length.out = 50))
+  
+  year_predict_ns <- as.numeric(seq(min(year_end), max(year_end), length.out = 50))
+  start_predict_ns <- as.numeric(seq(min(start_val_num), max(start_val_num), length.out = 50))
+  
+  
+  
+  ##### Prep data for jags (dfj) -----
+  dfj_t <- list()
+  
+  # Save the data for JAGS
+  dfj_t$data.for.bugs <- list(N = N,
+                              # Categorical
+                              trend = trend,
+                              raster = raster,
+                              grid = grid,
+                              state = state,
+                              change_class = change_class,
+                              start_val = start_val,
+                              # Numerical
+                              start_val_num_s = start_val_num_s,
+                              year_end_s = year_end_s,
+                              # Other data
+                              nCells = nCells,
+                              nTiles = nTiles,
+                              C1_start_mean = C1_start_mean,
+                              C2_start_mean = C2_start_mean,
+                              C3_start_mean = C3_start_mean,
+                              # Prediction dataframes for covariates (scaled)
+                              start_predict = start_predict,
+                              year_predict = year_predict
+                              
+                              
+  )
+  
+  # Save unscaled prediction objects
+  dfj_t$predict <- list(start_predict_ns = start_predict_ns,
+                        year_predict_ns = year_predict_ns)
+  
+  # Save raw data for covariates
+  dfj_t$raw_covs <- list()
+  
+  # Specifiy initial values
+  dfj_t$init.bugs <- function(){list(
+    alphaA = array(runif(3 * 4, -0.01, 0.01), dim = c(3, 4)),
+    betaB = array(runif(3 * 4, -0.01, 0.01), dim = c(3, 4)),
+    gammaC = array(runif(3 * 4, -0.01, 0.01), dim = c(3, 4))
+  )}
+  
+  
+  # Parameters to monitor
+  dfj_t$tomonitor <- c("alphaA","betaB","gammaC","p1_C1_S1_prob","p1_C1_S2_prob","p1_C1_S3_prob","p1_C1_S4_prob",
+                       "p1_C2_S1_prob","p1_C2_S2_prob","p1_C2_S3_prob","p1_C2_S4_prob",
+                       "p1_C3_S1_prob","p1_C3_S2_prob","p1_C3_S3_prob","p1_C3_S4_prob")
+  
+  return(dfj_t)
+  
+}
 
+# Data prep functions
+PrepDataForJAGS_multi_OHV_cat2 <- function(){
+  
+  # Load in the saved dataframe
+  data <- read.csv("./models/multinomial_jagsUI/Data_for_jags.csv")
+  
+  ### Create objects that can be used for predict in the model
+  
+  # Categorical
+  N<-nrow(data)
+  TREND <- data$trendID_jags
+  raster <- data$rasterID_jags
+  grid <- data$gridID_jags
+  state <- data$stateID_jags
+  change_class <- data$change_classID_jags
+  start_val <- data$startID_jags
+  
+  # Matirx of responses
+  trend<-matrix(data = 0, nrow = N, ncol = 3)
+  for(i in 1:N){
+    for(j in 1:3){
+      if(isTRUE(TREND[i] == "1")) {trend[i,1]<-1}  
+      if(isTRUE(TREND[i] == "2")) {trend[i,2]<-1}
+      if(isTRUE(TREND[i] == "3")) {trend[i,3]<-1}
+    }
+  }
+  
+  # Numeric
+  start_val_num <- data$start_val
+  year_end <- data$change_end_year
+  
+  # Numeric scaled
+  start_val_num_s <-data$start_val_s
+  year_end_s <- data$year_end_s
+  
+  # Other data values needed for estimation
+  
+  nTiles <- length(unique(data$gridID_jags))
+  nCells <- length(unique(data$rasterID_jags))
+  
+  data_C1 <- data %>% filter(change_class == "C1") 
+  C1_start_mean <- mean(data_C1$start_val_s)
+  
+  data_C2 <- data %>% filter(change_class == "C2") 
+  C2_start_mean <- mean(data_C2$start_val_s)
+  
+  data_C3 <- data %>% filter(change_class == "C3") 
+  C3_start_mean <- mean(data_C3$start_val_s)
+  
+  # Predictions
+  # Create range of values for in-modeling predictions, both scaled and not scaled
+  year_predict <- as.numeric(seq(min(year_end_s), max(year_end_s), length.out = 50))
+  start_predict <- as.numeric(seq(min(start_val_num_s), max(start_val_num_s), length.out = 50))
+  
+  year_predict_ns <- as.numeric(seq(min(year_end), max(year_end), length.out = 50))
+  start_predict_ns <- as.numeric(seq(min(start_val_num), max(start_val_num), length.out = 50))
+  
+  
+  
+  ##### Prep data for jags (dfj) -----
+  dfj_t <- list()
+  
+  # Save the data for JAGS
+  dfj_t$data.for.bugs <- list(N = N,
+                              # Categorical
+                              trend = trend,
+                              raster = raster,
+                              grid = grid,
+                              state = state,
+                              change_class = change_class,
+                              start_val = start_val,
+                              # Numerical
+                              start_val_num_s = start_val_num_s,
+                              year_end_s = year_end_s,
+                              # Other data
+                              nCells = nCells,
+                              nTiles = nTiles,
+                              C1_start_mean = C1_start_mean,
+                              C2_start_mean = C2_start_mean,
+                              C3_start_mean = C3_start_mean,
+                              # Prediction dataframes for covariates (scaled)
+                              start_predict = start_predict,
+                              year_predict = year_predict
+                              
+                              
+  )
+  
+  # Save unscaled prediction objects
+  dfj_t$predict <- list(start_predict_ns = start_predict_ns,
+                        year_predict_ns = year_predict_ns)
+  
+  # Save raw data for covariates
+  dfj_t$raw_covs <- list()
+  
+  # Specifiy initial values
+  dfj_t$init.bugs <- function(){list(alpha=runif(4,-0.01,0.01),
+                                     beta=runif(4,-0.01,0.01),
+                                     gamma=runif(4,-0.01,0.01),
+                                     alphaA=runif(3,-0.01,0.01),
+                                     betaB=runif(3,-0.01,0.01),
+                                     gammaC=runif(3,-0.01,0.01),
+                                     a=runif(1,-0.01,0.01),
+                                     b=runif(1,-0.01,0.01),
+                                     c=runif(1,-0.01,0.01)
+  )}
+  
+  
+  # Parameters to monitor
+  dfj_t$tomonitor <- c("alphaA","betaB","gammaC","alpha","beta","gamma","a","b","c","p1_C1_S1_prob","p1_C1_S2_prob","p1_C1_S3_prob","p1_C1_S4_prob",
+                       "p1_C2_S1_prob","p1_C2_S2_prob","p1_C2_S3_prob","p1_C2_S4_prob",
+                       "p1_C3_S1_prob","p1_C3_S2_prob","p1_C3_S3_prob","p1_C3_S4_prob")
+  
+  return(dfj_t)
+  
+}
 # MODEL functions
 
 # Model 1: RE of grid ID
@@ -401,6 +626,322 @@ for(i in 1:nTiles){
 # for(i in 1:nTiles){ 
 #   gridRE[i]~dnorm(0,tau) #Random effects
 # } 
+
+
+}",file=BUGSfilename_mult)
+  return(BUGSfilename_mult)
+}
+
+
+# Model 4: RE of raster cell ID and grid cell ID
+WriteJAGS_changexstart_rasterRE_gridRE <- function(){
+  BUGSfilename_mult <- "./models/multinomial_jagsUI/code.OHV.txt"
+  cat("
+    
+    model{
+   
+     for(i in 1:N){
+        
+        trend[i,1:3]~dmulti(p[i,1:3],1) #likelihood
+        
+        #process model
+        
+        #Increasae
+        log(p0[i,1]) <- alphaA[change_class[i],start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Stable
+        log(p0[i,2]) <- betaB[change_class[i],start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Decrease
+        log(p0[i,3]) <- gammaC[change_class[i],start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        for(j in 1:3){
+        p[i,j]<-p0[i,j]/sum(p0[i, ])
+        }
+
+   }
+
+#derived parameters
+log(p1_C1_S1) <- alphaA[1,1]
+log(p1_C1_S2) <- alphaA[1,2]
+log(p1_C1_S3) <- alphaA[1,3]
+log(p1_C1_S4) <- alphaA[1,4]
+
+log(p1_C2_S1) <- alphaA[2,1]
+log(p1_C2_S2) <- alphaA[2,2]
+log(p1_C2_S3) <- alphaA[2,3]
+log(p1_C2_S4) <- alphaA[2,4]
+
+log(p1_C3_S1) <- alphaA[3,1]
+log(p1_C3_S2) <- alphaA[3,2]
+log(p1_C3_S3) <- alphaA[3,3]
+log(p1_C3_S4) <- alphaA[3,4]
+
+log(p2_C1_S1) <- betaB[1,1]
+log(p2_C1_S2) <- betaB[1,2]
+log(p2_C1_S3) <- betaB[1,3]
+log(p2_C1_S4) <- betaB[1,4]
+
+log(p2_C2_S1) <- betaB[2,1]
+log(p2_C2_S2) <- betaB[2,2]
+log(p2_C2_S3) <- betaB[2,3]
+log(p2_C2_S4) <- betaB[2,4]
+
+log(p2_C3_S1) <- betaB[3,1]
+log(p2_C3_S2) <- betaB[3,2]
+log(p2_C3_S3) <- betaB[3,3]
+log(p2_C3_S4) <- betaB[3,4]
+
+log(p3_C1_S1) <- gammaC[1,1]
+log(p3_C1_S2) <- gammaC[1,2]
+log(p3_C1_S3) <- gammaC[1,3]
+log(p3_C1_S4) <- gammaC[1,4]
+
+log(p3_C2_S1) <- gammaC[2,1]
+log(p3_C2_S2) <- gammaC[2,2]
+log(p3_C2_S3) <- gammaC[2,3]
+log(p3_C2_S4) <- gammaC[2,4]
+
+log(p3_C3_S1) <- gammaC[3,1]
+log(p3_C3_S2) <- gammaC[3,2]
+log(p3_C3_S3) <- gammaC[3,3]
+log(p3_C3_S4) <- gammaC[3,4]
+
+# Adding the probabilities for all trends for each change class
+sum_p_C1_S1 <- sum(p1_C1_S1, p2_C1_S1, p3_C1_S1)
+sum_p_C1_S2 <- sum(p1_C1_S2, p2_C1_S2, p3_C1_S2)
+sum_p_C1_S3 <- sum(p1_C1_S3, p2_C1_S3, p3_C1_S3)
+sum_p_C1_S4 <- sum(p1_C1_S4, p2_C1_S4, p3_C1_S4)
+
+sum_p_C2_S1 <- sum(p1_C2_S1, p2_C2_S1, p3_C2_S1)
+sum_p_C2_S2 <- sum(p1_C2_S2, p2_C2_S2, p3_C2_S2)
+sum_p_C2_S3 <- sum(p1_C2_S3, p2_C2_S3, p3_C2_S3)
+sum_p_C2_S4 <- sum(p1_C2_S4, p2_C2_S4, p3_C2_S4)
+
+sum_p_C3_S1 <- sum(p1_C3_S1, p2_C3_S1, p3_C3_S1)
+sum_p_C3_S2 <- sum(p1_C3_S2, p2_C3_S2, p3_C3_S2)
+sum_p_C3_S3 <- sum(p1_C3_S3, p2_C3_S3, p3_C3_S3)
+sum_p_C3_S4 <- sum(p1_C3_S4, p2_C3_S4, p3_C3_S4)
+
+
+# Normalizing probabilities for each trend for each change class
+#Increase
+p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+p1_C2_S1_prob <- p1_C2_S1/sum_p_C2_S1
+p1_C2_S2_prob <- p1_C2_S2/sum_p_C2_S2
+p1_C2_S3_prob <- p1_C2_S3/sum_p_C2_S3
+p1_C2_S4_prob <- p1_C2_S4/sum_p_C2_S4
+p1_C3_S1_prob <- p1_C3_S1/sum_p_C3_S1
+p1_C3_S2_prob <- p1_C3_S2/sum_p_C3_S2
+p1_C3_S3_prob <- p1_C3_S3/sum_p_C3_S3
+p1_C3_S4_prob <- p1_C3_S4/sum_p_C3_S4
+
+# #Stable
+# p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+# p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+# p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+# p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+# 
+# #Decrease
+# p1_C3_prob <- p1_C3/sum_p_C3
+# p2_C3_prob <- p2_C3/sum_p_C3
+# p3_C3_prob <- p3_C3/sum_p_C3
+
+
+# Priors for fixed effect
+for(i in 1:3){ 
+for(j in 1:4){
+  alphaA[i,j]~dnorm(0,1)
+  betaB[i,j]~dnorm(0,1)
+  gammaC[i,j]~dnorm(0,1)
+  }
+} 
+
+
+#priors for RE of raster cell id
+
+rasterRE.sd ~ dgamma(0.1, 0.1)
+rasterRE.prec <- pow(rasterRE.sd, -2)
+for(i in 1:nCells){
+  rasterRE[i] ~ dnorm(0, rasterRE.prec)
+}
+
+# for(i in 1:nCells){ 
+#   rasterRE[i]~dnorm(0,tau) #Random effects
+# } 
+
+#priors for RE of grid cell id
+
+gridRE.sd ~ dgamma(0.1, 0.1)
+gridRE.prec <- pow(gridRE.sd, -2)
+for(i in 1:nTiles){
+  gridRE[i] ~ dnorm(0, gridRE.prec)
+}
+
+# for(i in 1:nTiles){ 
+#   gridRE[i]~dnorm(0,tau) #Random effects
+# } 
+
+
+}",file=BUGSfilename_mult)
+  return(BUGSfilename_mult)
+}
+
+# Model 5: RE of raster cell ID and grid cell ID
+WriteJAGS_change_start_rasterRE_gridRE <- function(){
+  BUGSfilename_mult <- "./models/multinomial_jagsUI/code.OHV.txt"
+  cat("
+    
+    model{
+   
+     for(i in 1:N){
+        
+        trend[i,1:3]~dmulti(p[i,1:3],1) #likelihood
+        
+        #process model
+        
+        #Increasae
+        log(p0[i,1]) <- a + alphaA[change_class[i]] + alpha[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Stable
+        log(p0[i,2]) <- b + betaB[change_class[i]] + beta[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        #Decrease
+        log(p0[i,3]) <- c + gammaC[change_class[i]] + gamma[start_val[i]] + rasterRE[raster[i]] + gridRE[grid[i]]
+        
+        for(j in 1:3){
+        p[i,j]<-p0[i,j]/sum(p0[i, ])
+        }
+
+   }
+
+#derived parameters
+log(p1_C1_S1) <- a + alphaA[1] + alpha[1]
+log(p1_C1_S2) <- a + alphaA[1] + alpha[2]
+log(p1_C1_S3) <- a + alphaA[1] + alpha[3]
+log(p1_C1_S4) <- a + alphaA[1] + alpha[4]
+
+log(p1_C2_S1) <- a + alphaA[2] + alpha[1]
+log(p1_C2_S2) <- a + alphaA[2] + alpha[2]
+log(p1_C2_S3) <- a + alphaA[2] + alpha[3]
+log(p1_C2_S4) <- a + alphaA[2] + alpha[4]
+
+log(p1_C3_S1) <- a + alphaA[3] + alpha[1]
+log(p1_C3_S2) <- a + alphaA[3] + alpha[2]
+log(p1_C3_S3) <- a + alphaA[3] + alpha[3]
+log(p1_C3_S4) <- a + alphaA[3] + alpha[4]
+
+log(p2_C1_S1) <- b + betaB[1] + beta[1]
+log(p2_C1_S2) <- b + betaB[1] + beta[2]
+log(p2_C1_S3) <- b + betaB[1] + beta[3]
+log(p2_C1_S4) <- b + betaB[1] + beta[4]
+
+log(p2_C2_S1) <- b + betaB[2] + beta[1]
+log(p2_C2_S2) <- b + betaB[2] + beta[2]
+log(p2_C2_S3) <- b + betaB[2] + beta[3]
+log(p2_C2_S4) <- b + betaB[2] + beta[4]
+
+log(p2_C3_S1) <- b + betaB[3] + beta[1]
+log(p2_C3_S2) <- b + betaB[3] + beta[2]
+log(p2_C3_S3) <- b + betaB[3] + beta[3]
+log(p2_C3_S4) <- b + betaB[3] + beta[4]
+
+log(p3_C1_S1) <- c + gammaC[1] + gamma[1]
+log(p3_C1_S2) <- c + gammaC[1] + gamma[2]
+log(p3_C1_S3) <- c + gammaC[1] + gamma[3]
+log(p3_C1_S4) <- c + gammaC[1] + gamma[4]
+
+log(p3_C2_S1) <- c + gammaC[2] + gamma[1]
+log(p3_C2_S2) <- c + gammaC[2] + gamma[2]
+log(p3_C2_S3) <- c + gammaC[2] + gamma[3]
+log(p3_C2_S4) <- c + gammaC[2] + gamma[4]
+
+log(p3_C3_S1) <- c + gammaC[3] + gamma[1]
+log(p3_C3_S2) <- c + gammaC[3] + gamma[2]
+log(p3_C3_S3) <- c + gammaC[3] + gamma[3]
+log(p3_C3_S4) <- c + gammaC[3] + gamma[4]
+
+# Adding the probabilities for all trends for each change class
+sum_p_C1_S1 <- sum(p1_C1_S1, p2_C1_S1, p3_C1_S1)
+sum_p_C1_S2 <- sum(p1_C1_S2, p2_C1_S2, p3_C1_S2)
+sum_p_C1_S3 <- sum(p1_C1_S3, p2_C1_S3, p3_C1_S3)
+sum_p_C1_S4 <- sum(p1_C1_S4, p2_C1_S4, p3_C1_S4)
+
+sum_p_C2_S1 <- sum(p1_C2_S1, p2_C2_S1, p3_C2_S1)
+sum_p_C2_S2 <- sum(p1_C2_S2, p2_C2_S2, p3_C2_S2)
+sum_p_C2_S3 <- sum(p1_C2_S3, p2_C2_S3, p3_C2_S3)
+sum_p_C2_S4 <- sum(p1_C2_S4, p2_C2_S4, p3_C2_S4)
+
+sum_p_C3_S1 <- sum(p1_C3_S1, p2_C3_S1, p3_C3_S1)
+sum_p_C3_S2 <- sum(p1_C3_S2, p2_C3_S2, p3_C3_S2)
+sum_p_C3_S3 <- sum(p1_C3_S3, p2_C3_S3, p3_C3_S3)
+sum_p_C3_S4 <- sum(p1_C3_S4, p2_C3_S4, p3_C3_S4)
+
+
+# Normalizing probabilities for each trend for each change class
+#Increase
+p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+p1_C2_S1_prob <- p1_C2_S1/sum_p_C2_S1
+p1_C2_S2_prob <- p1_C2_S2/sum_p_C2_S2
+p1_C2_S3_prob <- p1_C2_S3/sum_p_C2_S3
+p1_C2_S4_prob <- p1_C2_S4/sum_p_C2_S4
+p1_C3_S1_prob <- p1_C3_S1/sum_p_C3_S1
+p1_C3_S2_prob <- p1_C3_S2/sum_p_C3_S2
+p1_C3_S3_prob <- p1_C3_S3/sum_p_C3_S3
+p1_C3_S4_prob <- p1_C3_S4/sum_p_C3_S4
+
+# #Stable
+# p1_C1_S1_prob <- p1_C1_S1/sum_p_C1_S1
+# p1_C1_S2_prob <- p1_C1_S2/sum_p_C1_S2
+# p1_C1_S3_prob <- p1_C1_S3/sum_p_C1_S3
+# p1_C1_S4_prob <- p1_C1_S4/sum_p_C1_S4
+# 
+# #Decrease
+# p1_C3_prob <- p1_C3/sum_p_C3
+# p2_C3_prob <- p2_C3/sum_p_C3
+# p3_C3_prob <- p3_C3/sum_p_C3
+
+
+# Priors for fixed effect
+for(i in 1:3){ 
+  alphaA[i]~dnorm(0,1)
+  betaB[i]~dnorm(0,1)
+  gammaC[i]~dnorm(0,1)
+} 
+
+for(i in 1:4){ 
+  alpha[i]~dnorm(0,1)
+  beta[i]~dnorm(0,1)
+  gamma[i]~dnorm(0,1)
+} 
+
+a~dnorm(0,1)
+b~dnorm(0,1)
+c~dnorm(0,1)
+
+#priors for RE of raster cell id
+
+rasterRE.sd ~ dgamma(0.1, 0.1)
+rasterRE.prec <- pow(rasterRE.sd, -2)
+for(i in 1:nCells){
+  rasterRE[i] ~ dnorm(0, rasterRE.prec)
+}
+
+ 
+#priors for RE of grid cell id
+
+gridRE.sd ~ dgamma(0.1, 0.1)
+gridRE.prec <- pow(gridRE.sd, -2)
+for(i in 1:nTiles){
+  gridRE[i] ~ dnorm(0, gridRE.prec)
+}
+
 
 
 }",file=BUGSfilename_mult)

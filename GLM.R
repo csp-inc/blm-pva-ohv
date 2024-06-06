@@ -2,7 +2,8 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","spgwr","terra","sf","dplyr", "performance",
-                      "grid","ggeffects","MASS","DHARMa","pscl","AICcmodavg","lmtest","gridExtra","Matrix","lme4")
+                      "grid","ggeffects","MASS","DHARMa","pscl","AICcmodavg","lmtest","gridExtra","Matrix","lme4",
+                      "furrr","future","foreach","tictoc","doParallel")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -14,9 +15,8 @@ options(digits=4, scipen=999)
 # Reading in the dataframe with cell values
 # values_df <- st_read("./other_data/master/master_cells.shp")
 
-values_df_cleaned <- st_read("./other_data/master/master_cells_cleaned.shp")
+values_df <- st_read("./other_data/master/master_cells_cleaned3.shp")
 
-values_df <- values_df_cleaned
 head(values_df)
 
 # Choosing columns
@@ -44,16 +44,19 @@ values_df_long <- values_df_long %>% mutate(value_bin = case_when(
   value == 4 ~ 1
 ))
 
-# Seeing how many cells comprise different % of data
-# nrow(values_df)*.01
-
+# # IF you want to subset the data
+# # Seeing how many cells comprise different % of data
+# # nrow(values_df)*.01
+# 
 # # Randomly sampling cell IDs
-# sampled_values <- sample(unique(values_df_long$rstr_cl), nrow(values_df)*.5, replace = FALSE) # 10% of the data
+# sampled_values <- sample(unique(values_df_long$rstr_cl), nrow(values_df)*.01, replace = FALSE) # 10% of the data
 # 
 # # Subsetting the data to those randomly sampled IDs
 # values_df_sub <- values_df_long %>% filter(rstr_cl %in% sampled_values)
 
+# # If you want to use all the data
 values_df_sub <- values_df_long
+
 # Creating columns for year scaled and grid cell x year (factor)
 values_df_sub$year <- as.numeric(values_df_sub$year)
 values_df_sub$year_s <- scale(values_df_sub$year)
@@ -81,26 +84,46 @@ MOD_bin <- glmer(value_bin ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr), data = v
 
 saveRDS(MOD_bin,"./models/GLM/mod_100_nm.RDS")
 
+MOD_bin <- readRDS("./models/GLM/mod_100_nm.RDS")
+
+# Confirming convergence warning is false positive
+# https://joshua-nugent.github.io/allFit/
+mod_fits <- allFit(MOD_bin)
+
+diff_optims_OK <- mod_fits[sapply(mod_fits, is, "merMod")]
+lapply(diff_optims_OK, function(x) x@optinfo$conv$lme4$messages)
+
+convergence_results <- lapply(diff_optims_OK, function(x) x@optinfo$conv$lme4$messages)
+working_indices <- sapply(convergence_results, is.null)
+if(sum(working_indices) == 0){
+  print("No algorithms from allFit converged. You may still be able to use the results, but proceed with extreme caution.")
+  first_fit <- NULL
+} else {
+  first_fit <- mod_fits[working_indices][[1]]
+}
+first_fit
+
+# Examining effect of year
 summary(MOD_bin)$coefficients
-# OR
+# OR (exponentiated coefficient)
 exp(fixef(MOD_bin)[2])
 
 # For each year that passed, the odds that a pixel contained OHV grew 5.54 times
 exp(fixef(MOD_bin)[2]*sd(values_df_sub$year)) #5.796 
-exp(0.004504*sd(values_df_sub$year)) 
-
+# Finding 95% CI
 exp((fixef(MOD_bin)[2]+0.004504)*sd(values_df_sub$year)) #6.253 
 exp((fixef(MOD_bin)[2]-0.004504)*sd(values_df_sub$year)) #5.372 
-
 
 # Making fake data for predictions
 years_fake <- seq(min(values_df_sub$year_sc, na.rm = TRUE), max(values_df_sub$year_sc, na.rm = TRUE), length.out = 10)
 new_data_test <- data.frame(year_sc = c(-1.33185, -1.04845, -0.76504, -0.48164, -0.19824,  0.08517,  0.36857,  0.65197,  0.93538,  1.21878))
-new_data_test$year <- (new_data_test$year_sc * sd(values_df_sub$year)) + mean(values_df_sub$year)
 
 # Making predicted datasets
-# Conditioning on random effects
-pred_dat_MOD_re <- predict_response(MOD_bin, terms = new_data_test, type = "re")
+# Conditioning on fixed effects 
+pred_dat_MOD <- predict_response(MOD_bin, terms = new_data_test, type = "fe")
+
+new_data_test$year <- (new_data_test$year_sc * sd(values_df_sub$year)) + mean(values_df_sub$year)
+
 
 # Plotting
 plot <- ggplot(data = pred_dat_MOD, aes(x = x, y = exp(predicted*sd(values_df_sub$year))))+
@@ -111,78 +134,57 @@ plot <- ggplot(data = pred_dat_MOD, aes(x = x, y = exp(predicted*sd(values_df_su
 
 plot
 
-
-# # Residuals
-# resids_year_s <- residuals(MOD)
+## Running model iterations on smaller subsample of the data
+# values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")
 # 
-# # Adding residuals to the dataframe
-# values_df_sub <- values_df_sub %>% cbind(resids_year_s)
+# values_df_long <- values_df_long %>% mutate(value_bin = case_when(
+#   value == 0 ~ 0,
+#   value == 1 ~ 1,
+#   value == 2 ~ 1,
+#   value == 4 ~ 1
+# ))
 # 
-# library(ggspatial)
+# for(i in 1:50){
+#   # values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")
+#   sd_csv <- read.csv("./models/GLM/model_info.csv", header = TRUE)
+#   
+#   # values_df_long <- values_df_long %>% mutate(value_bin = case_when(
+#   #   value == 0 ~ 0,
+#   #   value == 1 ~ 1,
+#   #   value == 2 ~ 1,
+#   #   value == 4 ~ 1
+#   # ))
+#   
+#   
+#   # Randomly sampling cell IDs
+#   sampled_values <- sample(unique(values_df_long$rstr_cl), 10451143 *.01, replace = FALSE) # 10% of the data
+#   
+#   # Subsetting the data to those randomly sampled IDs
+#   values_df_sub <- values_df_long %>% filter(rstr_cl %in% sampled_values)
+#   
+#   # Creating columns for year scaled and grid cell x year (factor)
+#   values_df_sub$year <- as.numeric(values_df_sub$year)
+#   values_df_sub$year_s <- scale(values_df_sub$year)
+#   
+#   values_df_sub$year_sc <- as.numeric(values_df_sub$year_s[,1])
+#   
+#   values_df_sub$value_s <- scale(values_df_sub$value)
+#   values_df_sub$year_f <- as.factor(values_df_sub$year)
+#   values_df_sub$state <- as.factor(values_df_sub$state)
+#   values_df_sub$grd_cll_yr <- paste0(values_df_sub$grd_cll,"_",values_df_sub$year_f)
+#   values_df_sub$grd_cll_yr <- as.factor(values_df_sub$grd_cll_yr)
+#   values_df_sub$rstr_cl <- as.factor(values_df_sub$rstr_cl)
+#   
+#   MOD_bin <- glmer(value_bin ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr), data = values_df_sub, family = binomial(link = "logit"))
+#   
+#   sd_csv[i,1] <- i
+#   sd_csv[i,2] <- sd(values_df_sub$year)
+#   sd_csv[i,3] <- mean(values_df_sub$year)
+#   
+#   write.csv(sd_csv,"./models/GLM/model_info.csv",row.names = FALSE)
+#   saveRDS(MOD_bin,paste0("./models/GLM/mod_10_",i,".RDS"))
+# }
 # 
-# dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 # 
-# # Breaking up the dataframe by year
-# values_df_sub_year <-split(values_df_sub, values_df_sub$year)
+# sd_csv <- read.csv("./models/GLM/model_info.csv", header = TRUE)
 # 
-# # Plotting the residuals in space by year
-# ggplot() +
-#   annotation_spatial(dt_range) +
-#   layer_spatial(values_df_sub_year[[1]], aes(col = resids_year_s),size = 1)
-# 
-# ggplot() +
-#   annotation_spatial(dt_range) +
-#   layer_spatial(values_df_sub_year[[2]], aes(col = resids_year_s),size = 1)
-# 
-# ggplot() +
-#   annotation_spatial(dt_range) +
-#   layer_spatial(values_df_sub_year[[3]], aes(col = resids_year_s),size = 1)
-# 
-# ggplot() +
-#   annotation_spatial(dt_range) +
-#   layer_spatial(values_df_sub_year[[4]], aes(col = resids_year_s),size = 1)
-# 
-# 
-
-### Geographically weighted regression -----
-library(GWmodel)
-
-values_sp <- as_Spatial(values_df_sub) # 10% of the data
-
-band <- gwr.sel(value_bin ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr), data = values_sp, family = binomial(link = "logit"), adapt = T)
-
-gwr.model = gwr.mixed(value_bin ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr),
-                data = values_sp,
-                adapt=band,
-                hatmatrix=TRUE,
-                se.fit=TRUE) 
-
-
-# https://cran.r-project.org/web/packages/glmmTMB/vignettes/glmmTMB.pdf
-
-# # install.packages("TMB")
-# # install.packages("Matrix")
-# # install.packages("glmmTMB")
-# 
-# # library(glmmTMB)
-# # library(bbmle) 
-# # library(ggplot2)
-
-# This package is not working due to package version incompatbilities between Matrix and TMB
-
-
-# # ## cosmetic
-# # theme_set(theme_bw()+
-# #             theme(panel.spacing=grid::unit(0,"lines")))
-# # 
-# # 
-# # 
-# # fit_zipoisson <- glmmTMB(value ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr),
-# #                          data=values_df_sub,
-# #                          ziformula=~1,
-# #                          family=poisson)
-# # 
-# # fit_nbinom <- glmmTMB(value ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr),
-# #                          data=values_df_sub,
-# #                          ziformula=~1,
-# #                          family=nbinom2)

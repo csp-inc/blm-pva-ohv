@@ -36,7 +36,7 @@ final_random %>%
                                                                                                                                                    axis.text.y = element_text(color = "black",size=12),legend.title = element_text(face = "bold",size=12),
                                                                                                                                                    axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
                                                                                                                                                    legend.text = element_text(color="black",size=12))
-ggsave(filename = "./figure_3.jpeg",height = 7, width = 7.7)
+ggsave(filename = "./figures/figure_3.jpeg",height = 7, width = 7.7)
 
 # # Random sampling and combining categories medium and high
 # 
@@ -56,7 +56,7 @@ ggsave(filename = "./figure_3.jpeg",height = 7, width = 7.7)
 #   scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black"),
 #                                                                                                                                                    axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 # 
-# ggsave(filename = "./figure_3.1.jpeg",height = 7.5, width = 10)
+# ggsave(filename = "./figures/figure_3.1.jpeg",height = 7.5, width = 10)
 
 
 ### No longer used -----
@@ -148,7 +148,7 @@ ggsave(filename = "./figure_3.jpeg",height = 7, width = 7.7)
 #                                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))
 # 
 # 
-# ggsave(filename = "./figure_4.jpeg",height = 7.5, width = 10)
+# ggsave(filename = "./figures/figure_4.jpeg",height = 7.5, width = 10)
 # 
 # 
 # tot_length$year <- c(1979,1989,2012,2022)
@@ -231,10 +231,10 @@ plot(change_mean_masked)
 
 # Figure was created in Q GIS
 
-### Figure 7 -----
+### Figure 8 -----
 
-#### 1) Sum of coverage over the 1000m cell -----
-habsuit_1000 <- rast("habsuit.tif") %>% project("EPSG:3857",res = 1000)
+#### Mode OHV class in the 1000m cell -----
+habsuit_1000 <- rast("./other_data/habsuit.tif") %>% project("EPSG:3857",res = 1000)
 habsuit_1000
 # hist(values(habsuit_1000))
 
@@ -250,67 +250,6 @@ hist(values(habsuit_1000_class))
 dev.off()
 
 N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-N20_bin <- classify(N20, cbind(0, 4, 1), right=TRUE)
-unique(values(N20_bin))
-plot(N20_bin)
-
-N20_1km_bin_sum <- project(N20_bin,habsuit_1000, method = "sum")
-N20_1km_bin_sum
-plot(N20_1km_bin_sum)
-
-N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(-1, 1, 0), right=TRUE)
-N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(1, 11, 1), right=TRUE)
-N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(11, 22, 2), right=TRUE)
-N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(22, 33, 3), right=TRUE)
-N20_1km_bin_sum <- classify(N20_1km_bin_sum, cbind(33, 45, 4), right=FALSE)
-
-combo_1km_bin_sum <- habsuit_1000_class-N20_1km_bin_sum
-
-writeRaster(combo_1km_bin_sum,"./output_layers/combo_1km_bin_sum.tif",overwrite = TRUE)
-# writeRaster(N20_1km_bin_sum,"./output_layers/N20_1km_bin_sum.tif",overwrite = TRUE)
-# writeRaster(habsuit_1000,"./output_layers/habsuit_1km.tif",overwrite = TRUE)
-
-#### 2) Sum of coverage over the 3000 m cell ------
-habsuit_3000 <- rast("habsuit.tif") %>% project("EPSG:3857",res = 3000)
-habsuit_3000
-# hist(values(habsuit_1000))
-
-habsuit_3000_class <- classify(habsuit_3000, cbind(-1, .25, 100), right=TRUE)
-habsuit_3000_class <- classify(habsuit_3000_class, cbind(.25, .5, 200), right=TRUE)
-habsuit_3000_class <- classify(habsuit_3000_class, cbind(.5, .75, 300), right=TRUE)
-habsuit_3000_class <- classify(habsuit_3000_class, cbind(.75, 1, 400), right=FALSE)
-
-par(mfrow = c(1,2))
-plot(habsuit_3000_class)
-hist(values(habsuit_3000_class))
-# min(values(habsuit_class), na.rm = TRUE)
-dev.off()
-
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-N20_bin <- classify(N20, cbind(0, 4, 1), right=TRUE)
-unique(values(N20_bin))
-plot(N20_bin)
-
-N20_3km_bin_sum <- project(N20_bin,habsuit_3000, method = "sum")
-N20_3km_bin_sum
-plot(N20_3km_bin_sum)
-
-N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(-1, 1, 0), right=TRUE)
-N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(1, 100, 1), right=TRUE)
-N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(100, 200, 2), right=TRUE)
-N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(200, 300, 3), right=TRUE)
-N20_3km_bin_sum <- classify(N20_3km_bin_sum, cbind(300, 400, 4), right=FALSE)
-
-combo_3km_bin_sum <- habsuit_3000_class-N20_3km_bin_sum
-
-writeRaster(combo_3km_bin_sum,"./output_layers/combo_3km_bin_sum.tif",overwrite = TRUE)
-# writeRaster(N20_3km_bin_sum,"./output_layers/N20_3km_bin_sum.tif",overwrite = TRUE)
-# writeRaster(habsuit_3000,"./output_layers/habsuit_3km.tif",overwrite = TRUE)
-
-
-#### 3 & 4) Mode of 4 or 3 category 20s layer in 1000m cell -----
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-# N20_class <- classify(N20, cbind(1, 4, 3), right=TRUE)
 N20_class <- N20
 unique(values(N20_class))
 plot(N20_class)
@@ -324,37 +263,3 @@ combo_1km_class_mode <- habsuit_1000_class-N20_1km_class_mode
 writeRaster(combo_1km_class_mode,"./output_layers/combo_1km_class_sep_mode.tif",overwrite = TRUE)
 
 table(values(combo_1km_class_mode))
-
-1000*(40+434)
-
-#### 5) Intersection between original 150m 20s layer and habsuit -----
-habsuit <- rast("habsuit.tif") %>% project("EPSG:3857")
-
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-N20_high <- classify(N20, cbind(1, 5, 3), right=FALSE)
-N20_high <- classify(N20_high, cbind(-1, 2, NaN), right=TRUE)
-unique(values(N20_high))
-plot(N20_high)
-
-
-habsuit_150 <- project(habsuit,N20_high, method = "near")
-habsuit_150_high <- mask(habsuit_150,N20_high)
-plot(habsuit_150_high)
-writeRaster(habsuit_150_high,"./output_layers/habsuit_150_high.tif",overwrite = TRUE)
-
-
-
-habsuit <- rast("habsuit.tif") %>% project("EPSG:3857")
-
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-
-habsuit_class <- classify(habsuit, cbind(-1, .25, 100), right=TRUE)
-habsuit_class <- classify(habsuit_class, cbind(.25, .5, 200), right=TRUE)
-habsuit_class <- classify(habsuit_class, cbind(.5, .75, 300), right=TRUE)
-habsuit_class <- classify(habsuit_class, cbind(.75, 1, 400), right=FALSE)
-
-habsuit_class_150 <- project(habsuit_class,N20, method = "near")
-
-combo_150m_class_sep <- habsuit_class_150-N20
-writeRaster(combo_150m_class_sep,"./output_layers/combo_150m_class_sep.tif",overwrite = TRUE)
-

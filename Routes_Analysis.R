@@ -93,18 +93,17 @@ nrow(trail_df_model)*150*150 # 2528302500 = total area in m2
 st_area(dt_range_web)
 (2528302500/2.49582e+11)*100 # 1.01 = % of mdt range in analysis
 
-## Part I: WEMO known OHV routes analysis -----
 # Load in the saved model data
 trail_df_model <- read.csv("./other_data/routes/routes_data_cleaned_model.csv")
 # trail_df_model <- read.csv("./other_data/routes/routes_data_model.csv")
 
-##### Links -----
+## Links -----
 
 # https://cran.r-project.org/web/packages/pscl/vignettes/countreg.pdf
 # https://webhome.auburn.edu/~tds0009/Articles/Martin%20et%20al.%202005.pdf
 # https://www.sciencedirect.com/science/article/abs/pii/S0378375809000810#:~:text=Without%20confusion%2C%20overdispersion%20can%20be,accounted%20for%20through%20zero%2Dinflation.
 
-#### Ordinal regression -----
+## Ordinal regression -----
 # https://www.bookdown.org/rwnahhas/RMPH/blr-ordinal.html
 
 trail_df_model <- trail_df_model %>% mutate(val_ord = as.factor(OHV_dens))
@@ -179,86 +178,4 @@ low_med <- uniroot(function(x)  function_list[[1]](x) - function_list[[2]](x)  ,
 med_high <- uniroot(function(x)  function_list[[2]](x) - function_list[[3]](x)  , c(0,400), tol=1e-8)    #392 
 
 ggsave("./routes_figure.jpeg")
-
-
-## Part II: Designated roads as predictors of model performance  -----
-# Getting Residuals (pearson, raw residuals standardized by the square root of the variance function)
-resid <- residuals(ord_model)
-hist(resid)
-
-# Adding them to the data frame
-trail_df_model <- cbind(trail_df_model,resid)
-trail_df_model$cell_ID <- as.integer(trail_df_model$cell_ID)
-
-trail_df_resid <- N10_sf %>% left_join(trail_df_model[,c("cell_ID","resid")], by = "cell_ID")
-
-trail_df_resid <- trail_df_resid[complete.cases(trail_df_resid$resid), ]
-
-# Looking at the distribution of the residuals
-hist(trail_df_resid$resid)
-
-# 
-# if(dir.exists("./other_data/roads") == FALSE){dir.create("./other_data/roads")}
-# 
-# roads2012_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/TIGER_roads_2012")
-# roads2012_contents <- roads2012_contents$name
-# 
-# purrr::map(roads2012_contents, function(x)
-#   gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
-#                  saveToDisk = paste0("./other_data/roads/",basename(x))))
-
-# template_rast_web <- rast("./output_layers/N10_04052024.tif")
-# 
-# roads <- st_read("./other_data/roads/TIGER_2012_roads_merged.shp")
-# road_filt <- roads %>% filter(MTFCC == "S1100" | MTFCC == "S1200" | MTFCC == "S1400")
-# road_web <- st_transform(road_filt, "EPSG:3857")
-# road_crop <- st_crop(road_web,dt_range_web)
-# road_vect <- vect(road_crop)
-# road_rast <- rasterize(road_vect, template_rast_web,cover=TRUE)
-# 
-# road_dist <- distance(road_rast)
-# writeRaster(road_dist,"./other_data/routes/TIGER_2010_road_dist.tif",overwrite=TRUE)
-
-
-road_dist <- rast("./other_data/routes/TIGER_2010_road_dist.tif")
-library(terra)
-trail_df_resid$road_dist <- c(terra::extract(road_dist,trail_df_resid, fun = "mean")[,2])
-
-
-trail_df_resid <- st_drop_geometry(trail_df_resid)
-write.csv(trail_df_resid,"./other_data/routes/routes_data_model2.csv", row.names = FALSE)
-
-model_roads <- lm(resid ~ road_dist, data = trail_df_resid)
-summary(model_roads)
-
-saveRDS(model_roads,"./models/Routes/model_TIGER_lm.RDS")
-# model_roads <- readRDS("./models/Routes/model_TIGER_lm.RDS")
-# summary(model_roads)
-
-dist_fake <- seq(min(trail_df_resid$road_dist),max(trail_df_resid$road_dist), length.out = 25)
-dist_fake
-
-
-# Create a data frame with the values of trail_dens
-new_data2 <- data.frame(road_dist = c(0,375,750, 1125, 1500, 1875, 2250, 2625, 3000, 3375, 3750, 4125, 4500, 4875, 5250, 5625, 6000, 6375,
-                                        6750, 7125, 7500, 7875, 8250, 8625, 9000))
-
-
-
-pred_dat2 <- predict_response(model_roads, terms = new_data2)
-
-
-
-plot2 <- ggplot(data = pred_dat2, aes(x = x, y = predicted))+
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), linetype = "dashed", alpha = 0.1)+
-  geom_line(aes(y =predicted), size = 0.75) +
-  xlab("Distance from road (m)")+ylab(" Predicted Model 1 residual value") + theme_minimal() 
-
-plot2
-
-plot(trail_df_resid$road_dist,trail_df_resid$resid)
-
-library(gridExtra)
-grid.arrange(plot1, plot2, ncol=2)
-
 

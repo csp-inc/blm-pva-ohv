@@ -156,12 +156,16 @@ plot1 <- ggplot(data = pred_dat, aes(x = x, y = predicted, colour = factor(OHV.d
   geom_line(size = 0.75) + 
   scale_color_manual(values = category_colors) + # Assign colors manually
   scale_fill_manual(values = category_colors) + # Match fill colors to line colors
-  xlab("Density of known OHV routes (total length (m) in 150-m² chip)") + ylab("Probability of OHV route density category") + 
+  xlab("Density of known OHV routes (total length (m) in 150-m² cell)") + ylab("Probability of OHV route density category") + 
   theme_classic() +
   theme(
     legend.position = "top",  # Set legend position to top
-    legend.box = "horizontal"  # Arrange legend items horizontally
+    legend.box = "horizontal",  # Arrange legend items horizontally
     # text = element_text(family = "Times New Roman") # Set font to Times New Roman
+    axis.text.x = element_text(color="black",size=12),
+    axis.text.y = element_text(color = "black",size=12),
+    axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
+    legend.text = element_text(color="black",size=12)
   )
 
 plot1
@@ -177,5 +181,25 @@ x <- c(0,50,100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,
 low_med <- uniroot(function(x)  function_list[[1]](x) - function_list[[2]](x)  , c(0,400), tol=1e-8)     #214
 med_high <- uniroot(function(x)  function_list[[2]](x) - function_list[[3]](x)  , c(0,400), tol=1e-8)    #392 
 
-ggsave("./routes_figure.jpeg")
+ggsave("./figures/routes_figure.jpeg",height = 5, width = 7.7)
+
+
+# Finding actual density class distribution by known route length
+
+library("reshape2")
+
+data <- trail_df_model %>% filter(routes_length < 700)
+
+data<- melt(data)
+
+max(data$value)
+
+
+ggplot(data,aes(x=routes_length, fill=val_ord)) + geom_density(alpha=0.25)
+ggplot(data,aes(x=routes_length, fill=val_ord)) + geom_histogram(alpha=0.25)
+ggplot(data,aes(x=val_ord, y=routes_length, fill=val_ord)) + geom_boxplot()
+
+
+
+
 

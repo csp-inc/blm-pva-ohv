@@ -103,36 +103,47 @@ if(sum(working_indices) == 0){
 }
 first_fit
 
+summary(MOD_bin)
+
 # Examining effect of year
 summary(MOD_bin)$coefficients
 # OR (exponentiated coefficient)
 exp(fixef(MOD_bin)[2])
-
-# For each year that passed, the odds that a pixel contained OHV grew 5.54 times
+# For each year that passed, the odds that a pixel contained OHV grew 5.8 times
 exp(fixef(MOD_bin)[2]*sd(values_df_sub$year)) #5.796 
 # Finding 95% CI
 exp((fixef(MOD_bin)[2]+0.004504)*sd(values_df_sub$year)) #6.253 
 exp((fixef(MOD_bin)[2]-0.004504)*sd(values_df_sub$year)) #5.372 
 
-# Making fake data for predictions
-years_fake <- seq(min(values_df_sub$year_sc, na.rm = TRUE), max(values_df_sub$year_sc, na.rm = TRUE), length.out = 10)
-new_data_test <- data.frame(year_sc = c(-1.33185, -1.04845, -0.76504, -0.48164, -0.19824,  0.08517,  0.36857,  0.65197,  0.93538,  1.21878))
 
-# Making predicted datasets
-# Conditioning on fixed effects 
-pred_dat_MOD <- predict_response(MOD_bin, terms = new_data_test, type = "fe")
+# OR (exponentiated coefficient)
+exp(fixef(MOD_bin)[1])
+# For each year that passed, the odds that a pixel contained OHV grew 5.8 times
+exp(fixef(MOD_bin)[1]*sd(values_df_sub$year)) #5.796 
+# Finding 95% CI
+exp((fixef(MOD_bin)[1]+0.004504)*sd(values_df_sub$year)) #6.253 
+exp((fixef(MOD_bin)[1]-0.004504)*sd(values_df_sub$year)) #5.372 
 
-new_data_test$year <- (new_data_test$year_sc * sd(values_df_sub$year)) + mean(values_df_sub$year)
 
-
-# Plotting
-plot <- ggplot(data = pred_dat_MOD, aes(x = x, y = exp(predicted*sd(values_df_sub$year))))+
-  geom_ribbon(aes(ymin = exp(conf.low*sd(values_df_sub$year)), ymax = exp(conf.high*sd(values_df_sub$year))), alpha = 0.1, linetype = "dashed", size = 0.25)+
-  geom_line(size = 0.75) + 
-  xlab("Year") + ylab("Probability of chip containing OHV routes") + 
-  theme_minimal()
-
-plot
+# # Making fake data for predictions
+# years_fake <- seq(min(values_df_sub$year_sc, na.rm = TRUE), max(values_df_sub$year_sc, na.rm = TRUE), length.out = 10)
+# new_data_test <- data.frame(year_sc = c(-1.33185, -1.04845, -0.76504, -0.48164, -0.19824,  0.08517,  0.36857,  0.65197,  0.93538,  1.21878))
+# 
+# # Making predicted datasets
+# # Conditioning on fixed effects 
+# pred_dat_MOD <- predict_response(MOD_bin, terms = new_data_test, type = "fe")
+# 
+# new_data_test$year <- (new_data_test$year_sc * sd(values_df_sub$year)) + mean(values_df_sub$year)
+# 
+# 
+# # Plotting
+# plot <- ggplot(data = pred_dat_MOD, aes(x = x, y = exp(predicted*sd(values_df_sub$year))))+
+#   geom_ribbon(aes(ymin = exp(conf.low*sd(values_df_sub$year)), ymax = exp(conf.high*sd(values_df_sub$year))), alpha = 0.1, linetype = "dashed", size = 0.25)+
+#   geom_line(size = 0.75) + 
+#   xlab("Year") + ylab("Probability of chip containing OHV routes") + 
+#   theme_minimal()
+# 
+# plot
 
 ## Running model iterations on smaller subsample of the data
 # values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")

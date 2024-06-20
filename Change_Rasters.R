@@ -2,7 +2,7 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4","networkD3","dplyr")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -116,6 +116,43 @@ change_data_all %>%
   scale_fill_manual(values = c("#A2CD5A","#CD6090","#00B2EE"),labels=c("1970-1980", "1980-2010","2010-2020"),name="Change Timestep") +
   theme(axis.title.x = element_blank(), legend.position = "right")+
   theme_classic() + theme(axis.text.x = element_text(color="black"),axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
+
+
+
+
+
+
+
+# A connection data frame is a list of flows with intensity for each flow
+values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
+
+# Removing rows with no OHV value in that year
+values_sample <- values_sample[complete.cases(values_sample), ]
+
+
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+         as.character(links$target)) %>% unique()
+)
+
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+
+# Make the Network
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+                   Source = "IDsource", Target = "IDtarget",
+                   Value = "value", NodeID = "name", 
+                   sinksRight=FALSE)
+p
+
+
+
+
+
+
+
 
 
 

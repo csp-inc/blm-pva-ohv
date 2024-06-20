@@ -266,6 +266,109 @@ random_sampling3 <- function(x, small_ext = FALSE){
 }
 
 
+# This function randomly samples 1000 chips 1000 times and summarizes OHV density information
+# It then determines the length in the estimate 
+random_sampling_length <- function(x, small_ext = FALSE){
+  # x <- values_sample
+  if(small_ext){
+    x <- x[complete.cases(x), ]
+  }
+  
+  ncells <- nrow(x)
+  
+  values_df_70 <- x[,c(2,6)]
+  values_df_70 <- values_df_70[complete.cases(values_df_70$V1970), ]
+  
+  values_df_80 <- x[,c(3,6)]
+  values_df_80 <- values_df_80[complete.cases(values_df_80$V1980), ]
+  
+  values_df_10 <- x[,c(4,6)]
+  values_df_10 <- values_df_10[complete.cases(values_df_10$V2010), ]
+  
+  values_df_20 <- x[,c(5,6)]
+  values_df_20 <- values_df_20[complete.cases(values_df_20$V2020), ]
+  
+  list <- list()
+  list[[1]] <- values_df_70
+  list[[2]] <- values_df_80
+  list[[3]] <- values_df_10
+  list[[4]] <- values_df_20
+  
+  # Make lists for each decade
+  output_mean <- vector(length = 4,mode = "list")
+  output_sd <- vector(length = 4,mode = "list")
+  # Make dataframe for each decade with a column for each scaling factor
+  for(i in 1:4){
+    output_mean[[i]] <- data.frame(matrix(ncol = 3, nrow = 1))
+    output_sd[[i]] <- data.frame(matrix(ncol = 3, nrow = 1))
+  }
+
+  min_sc <- c(0,1,151,451)
+  mean_sc <- c(0,75,300,11475)
+  max_sc <- c(0,150,450,22500)
+  
+  scaling_df <- as.data.frame(cbind(min_sc,mean_sc,max_sc))
+  
+  set.seed(41)
+  for (i in 1:4){ # for each decade
+    df <- list[[i]]
+    length_df <- data.frame(matrix(nrow = 4, ncol = 1000))
+    # repeat sampling of 1000 cells 1000 times
+    for (j in 1:1000){
+      # Generate 1000 random row indices
+      random_indices <- sample(1:nrow(df), 1000, replace = FALSE)
+      # Subset the dataset with the randomly selected indices
+      subset_df <- df[random_indices, ]
+      values <- as.data.frame(table(subset_df[,1]))
+      length_df[,j] <- values[,2] # add each sample values as a column
+    }
+    # multiply by the scaling factor and find the mean and standard deviation of samples
+    for (k in 1:3){ # for each scaling factor
+      length_df_scaled <- length_df
+      # for each OHV class
+      for(l in 1:4){ 
+        length_df_scaled[l,] <- length_df[l,]*scaling_df[l,k]
+      }
+      # add all the lengths contributed by each class together
+      lengths <- colSums(length_df_scaled)
+      lengths <- as.numeric(lengths)
+      # multiply 
+      lengths_mdt <- (lengths*ncells)/1000
+      output_mean[[i]][1,k] <- mean(lengths_mdt)
+      output_sd[[i]][1,k] <- sd(lengths_mdt)
+    }
+  }
+  
+  lengths <- bind_rows(output_mean)
+  lengths_sd <- bind_rows(output_sd)
+  
+  
+  colnames(lengths) <- c("min","mean","max")
+  rownames(lengths) <- c("V1970","V1980","V2010","V2020")
+  colnames(lengths_sd) <- c("min","mean","max")
+  rownames(lengths_sd) <- c("V1970","V1980","V2010","V2020")
+
+  lengths_long <- lengths %>% 
+    pivot_longer(
+      cols = c("min","mean","max"), 
+      names_to = "scale",
+      values_to = "mean_length"
+    )
+  
+  lengths_sd_long <- lengths_sd %>% 
+    pivot_longer(
+      cols = c("min","mean","max"), 
+      names_to = "scale",
+      values_to = "sd_length"
+    )
+  
+
+  final_random <- cbind(lengths_long,lengths_sd_long[,2])
+  final_random$decade <- c("V1970","V1970","V1970","V1980","V1980","V1980","V2010","V2010","V2010","V2020","V2020","V2020")
+  
+  return(final_random)
+}
+
 
 
 

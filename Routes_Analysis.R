@@ -151,6 +151,8 @@ pred_dat <- pred_dat %>% left_join(datf)
 category_colors <- c("None" = "#a69d8b", "Low" = "#fae51e", "Medium" = "darkorange","High" ="red")
 legend_order <- c("None", "Low", "Medium", "High")
 
+
+### Figure 7 ------
 plot1 <- ggplot(data = pred_dat, aes(x = x, y = predicted, colour = factor(OHV.density,levels = legend_order)))+
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = factor(OHV.density, levels = legend_order)), alpha = 0.1, linetype = "dashed", size = 0.25)+
   geom_line(size = 0.75) + 

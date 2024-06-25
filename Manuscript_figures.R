@@ -14,29 +14,29 @@ source("./Functions.R")
 dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 st_area(dt_range) # 2.49582e+11 [m^2]
 
-### Figure 3 -----
-# Loads in csv created in script "Master_creation.R"
-values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
 
-# Randomly samples 1000 cells 1000 times from areas that have estiamtes in all decades
-final_random <- random_sampling(values_sample,small_ext = TRUE)
-
-year_order <- c("V1970","V1980","V2010","V2020")
-final_random %>%
-  ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
-  geom_col(position = "dodge")+
-  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
-                position = position_dodge(0.9), width = .3)+
-  scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
-  ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
-  geom_text(size = 3.5, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
-  scale_fill_manual(values = c("#a69d8b","#fae51e","darkorange","red"),labels=c("None", "Low","Medium","High"),name="OHV route\ndensity category") +
-  theme(legend.position = "right")+
-  scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black",size=12),
-                                                                                                                                                   axis.text.y = element_text(color = "black",size=12),legend.title = element_text(face = "bold",size=12),
-                                                                                                                                                   axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
-                                                                                                                                                   legend.text = element_text(color="black",size=12))
-ggsave(filename = "./figures/figure_3.jpeg",height = 7, width = 7.7)
+# # Loads in csv created in script "Master_creation.R"
+# values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
+# 
+# # Randomly samples 1000 cells 1000 times from areas that have estiamtes in all decades
+# final_random <- random_sampling(values_sample,small_ext = TRUE)
+# 
+# year_order <- c("V1970","V1980","V2010","V2020")
+# final_random %>%
+#   ggplot(aes(fill= OHV_val, y = mean, x = as.factor(year),label = paste0(round(100*mean,1),"%")))+
+#   geom_col(position = "dodge")+
+#   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), 
+#                 position = position_dodge(0.9), width = .3)+
+#   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"),limits = year_order)+
+#   ggsci::scale_fill_jco(name = "OHV route\ndensity category")+ 
+#   geom_text(size = 3.5, color = "black", position = position_dodge2(width = 4),vjust=-2.5, hjust=.4) +
+#   scale_fill_manual(values = c("#a69d8b","#fae51e","darkorange","red"),labels=c("None", "Low","Medium","High"),name="OHV route\ndensity category") +
+#   theme(legend.position = "right")+
+#   scale_y_continuous(breaks = seq(0,1,.2), name = "Percent of random sample",labels = c("0","20","40","60","80","100"))  + theme_classic() + theme(axis.text.x = element_text(color="black",size=12),
+#                                                                                                                                                    axis.text.y = element_text(color = "black",size=12),legend.title = element_text(face = "bold",size=12),
+#                                                                                                                                                    axis.title.y = element_text(color="black",size=12),axis.title.x = element_text(color="black",size=12),
+#                                                                                                                                                    legend.text = element_text(color="black",size=12))
+# ggsave(filename = "./figures/figure_3.jpeg",height = 7, width = 7.7)
 
 # # Random sampling and combining categories medium and high
 # 
@@ -59,7 +59,7 @@ ggsave(filename = "./figures/figure_3.jpeg",height = 7, width = 7.7)
 # ggsave(filename = "./figures/figure_3.1.jpeg",height = 7.5, width = 10)
 
 
-### No longer used -----
+### Figure 5 -----
 
 ## Using consistent extent to calculate OHV route length stats for each year
 values_df <- read.csv("./other_data/master/master_cells_cleaned3.csv")
@@ -148,48 +148,66 @@ tot_length_long <- tot_length %>%
 tot_length <- cbind(tot_length,decades)
 tot_length_long$decades <- c("1970","1970","1970","1980","1980","1980","2010","2010","2010","2020","2020","2020")
 
-ggplot(tot_length_long , aes(x=decades, y=length/1000, color = scale, fill = scale)) +
+
+tot_length_long2 <- tot_length_long %>% filter(scale != "min_length")
+
+# ggplot(tot_length_long , aes(x=decades, y=length/1000, color = scale, fill = scale)) +
+#   geom_col(position = "dodge") + ylab("Total OHV route length (km)") + xlab("Decade") +
+#   theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
+#                           legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
+#                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))+
+#   scale_fill_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
+#   scale_color_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
+#   scale_y_continuous(breaks = c(0,1000000,2000000,3000000,4000000,5000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6","4E6","5E6"))+ 
+#   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"))
+# 
+
+ggplot(tot_length_long2 , aes(x=decades, y=length/1000, color = scale, fill = scale)) +
   geom_col(position = "dodge") + ylab("Total OHV route length (km)") + xlab("Decade") +
   theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
                           legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))+
-  scale_fill_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
-  scale_color_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
-  scale_y_continuous(breaks = c(0,1000000,2000000,3000000,4000000,5000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6","4E6","5E6"))+ 
-  scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"))
-
-
-ggplot(tot_length , aes(x=decades, y=max_length/1000)) +
-  geom_bar(stat = "identity") +ylab("Total OHV route length (km)") + xlab("Decade") +
-  theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
-                          legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
-                          axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))
-
-
-
-# ggsave(filename = "./figures/figure_4.jpeg",height = 7.5, width = 10)
-
-# Loads in csv created in script "Master_creation.R"
-values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
-
-# Randomly samples 1000 cells 1000 times from areas that have estiamtes in all decades
-final_random_length <- random_sampling_length(values_sample,small_ext = TRUE)
-
-pd = position_dodge(.2) 
-
-ggplot(final_random_length, aes(x=decade, y=mean_length/1000, color = scale)) +
-  geom_point(position = pd, size = 3) +ylab("Total OHV route length (km)") + xlab("Decade") +
-  geom_errorbar(aes(ymin = (mean_length-sd_length)/1000, ymax = (mean_length+sd_length)/1000), position = pd)+
-  theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
-                          legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
-                          axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12)) +
-  scale_color_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
+  scale_fill_manual(values = c("#528970","#18416e"),labels=c("Median","Minimum"),name="") +
+  scale_color_manual(values = c("#528970","#18416e"),labels=c("Median","Minimum"),name="") +
   scale_y_continuous(breaks = c(0,1000000,2000000,3000000,4000000,5000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6","4E6","5E6"))+ 
   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"))
 
 
 
-### Figure 4 -----
+# ggplot(tot_length, aes(x=as.integer(decades), y=mean_length/1000)) +
+#   geom_bar(stat = "identity", color = "#CD8500", fill = "#CD8500") +ylab("Total OHV route length (km)") + xlab("Decade") +
+#   theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
+#                           legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
+#                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12)) +
+#   scale_y_continuous(breaks = c(0,1000000,2000000,3000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6")) +
+#   scale_x_continuous(breaks = c(1970,1980,2010,2020), name = "Decade",labels = c("1970s","1980s","2010s","2020s")) +
+#   geom_point(stat = "identity") +
+#   geom_smooth(data = tot_length,aes(x=as.integer(decades), y=mean_length/1000),method = "lm", se = FALSE, color = "black")
+#   
+  
+ggsave(filename = "./figures/figure_5.jpeg",height = 4.5, width = 6)
+
+# # Loads in csv created in script "Master_creation.R"
+# values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
+# 
+# # Randomly samples 1000 cells 1000 times from areas that have estiamtes in all decades
+# final_random_length <- random_sampling_length(values_sample,small_ext = TRUE)
+# 
+# pd = position_dodge(.2) 
+# 
+# ggplot(final_random_length, aes(x=decade, y=mean_length/1000, color = scale)) +
+#   geom_point(position = pd, size = 3) +ylab("Total OHV route length (km)") + xlab("Decade") +
+#   geom_errorbar(aes(ymin = (mean_length-sd_length)/1000, ymax = (mean_length+sd_length)/1000), position = pd)+
+#   theme_classic() + theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color = "black",size=12),
+#                           legend.title = element_text(face = "bold",size=12),axis.title.y = element_text(color="black",size=12),
+#                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12)) +
+#   scale_color_manual(values = c("#b7d04d","#528970","#18416e"),labels=c("Maximum", "Mean","Minimum"),name="") +
+#   scale_y_continuous(breaks = c(0,1000000,2000000,3000000,4000000,5000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6","4E6","5E6"))+ 
+#   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"))
+# 
+# ggsave(filename = "./figures/figure_5.jpeg",height = 7.5, width = 10)
+
+### Figure 6 -----
 
 # Loads in original layers created in scripts "Mosaick.R" and "Processing.R"
 n1970 <- rast("./output_layers/n70_04052024.tif")
@@ -258,7 +276,7 @@ plot(change_mean_masked)
 
 
 
-## Stats for figure 7
+## Stats for figure 6
 
 RU <- st_read("./shapefiles/2011RecoveryUnits/Recovery_units_web.shp")
 RU

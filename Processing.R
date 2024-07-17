@@ -2,12 +2,16 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
+# Use the JSON file to authenticate communication between RStudio and GCS
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 
+if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
+if(dir.exists("./other_data/masks") == FALSE){dir.create("./other_data/masks")}
 # Load in OHV layers
 
 n70 <- rast("./output_layers/NETR_NOC_1970_full_web_cropped.tif")
@@ -28,6 +32,20 @@ writeRaster(stack[[1]],"./output_layers/n70.tif", overwrite = TRUE)
 writeRaster(stack[[2]],"./output_layers/n80.tif", overwrite = TRUE)
 writeRaster(stack[[3]],"./output_layers/N10.tif", overwrite = TRUE)
 writeRaster(stack[[4]],"./output_layers/N20.tif", overwrite = TRUE)
+
+# Looking at coverage for each decade
+decade_coverage <- classify(stack, cbind(0, 5, 1), right=FALSE)
+plot(decade_coverage)
+
+# Creating a mask layer that represents all NAs across time
+mask <- N20
+mask <- mask(mask,N10)
+mask <- mask(mask,n80)
+mask <- mask(mask,n70)
+mask <- classify(mask, cbind(0, 5, 1), right=FALSE)
+plot(mask)
+writeRaster(mask,"./other_data/masks/small_ext.tif")
+
 
 # Create binary raster stack and then run both categorical and binary layers through ohv sum with radius 400m and radius 200m
 

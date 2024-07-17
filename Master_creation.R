@@ -4,10 +4,15 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4","stars")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4","stars","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
+
+# Use the JSON file to authenticate communication between RStudio and GCS
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
+
+if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
 
 ### Part 1: extracting OHV density values for each chip for each decade -----
 # Choose which layers you want to load in to create the master csv
@@ -68,6 +73,20 @@ centroids <- centroids[,-1]
 centroids$raster_cell <- values_df$raster_cell
 
 ### Part 3: Adding other chip information -----
+
+# Get contents of folder in GCS you wish to download to local device
+contents <- gcs_list_objects(bucket = "gs://pva_image_processing",
+                             prefix = "grid/")
+
+if(dir.exists("./NETR_lookup") == FALSE){dir.create("./NETR_lookup")}
+
+# Uses library purrr to download all contents of folder
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://pva_image_processing", overwrite = TRUE,
+                 saveToDisk = paste0("./NETR_lookup","/",basename(x))))
+
+
 # Load in the shapefile for the tiles used in computer vision
 grid <- st_read("./NETR_lookup/grid_full_dtrange_crop.shp")
 
@@ -75,6 +94,19 @@ grid <- st_read("./NETR_lookup/grid_full_dtrange_crop.shp")
 points_w_grid <- st_join(centroids, grid)
 
 # Load in states shapefile
+
+# Get contents of folder in GCS you wish to download to local device
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/")
+
+if(dir.exists("./shapefiles/us_states") == FALSE){dir.create("./shapefiles/us_states")}
+
+# Uses library purrr to download all contents of folder
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/us_states","/",basename(x))))
+
 states <- st_read("./shapefiles/us_states/states_web.shp")
 states <- states[,c("NAME","geometry")]
 
@@ -95,7 +127,7 @@ names(values_df) <- c("V1970","V1980","V2010","V2020","raster_cell","grid_cell",
 # NOTE: change the name of these files to reflect which layers were used to create it
 
 # # Saving as a shapefile with geometry
-# if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
+if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
 # st_write(values_df,"./other_data/master/master_cells_cleaned3.shp",append=FALSE)
 
 # Removing geometry to save as a .csv

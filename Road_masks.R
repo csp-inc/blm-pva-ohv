@@ -13,6 +13,7 @@ gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 bucket_name<-"gs://csp_tortoisehub"
 
 # Create folder to store roads data
+if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
 if(dir.exists("./other_data/roads") == FALSE){dir.create("./other_data/roads")}
 
 # Load the mdt range for use later

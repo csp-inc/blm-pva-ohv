@@ -14,6 +14,10 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
+if(dir.exists("./models") == FALSE){dir.create("./models")}
+if(dir.exists("./models/multinomial_jagsUI") == FALSE){dir.create("./models/multinomial_jagsUI")}
+if(dir.exists("./models/multinomial_jagsUI/output") == FALSE){dir.create("./models/multinomial_jagsUI/output")}
+
 
 # Load the functions used to process telemetry and estimate survival
 source("./multi_jags_functions.R")

@@ -15,7 +15,10 @@ bucket_name<-"gs://csp_tortoisehub"
 # Loading in dt range
 dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
+if(dir.exists("./models") == FALSE){dir.create("./models")}
 if(dir.exists("./models/Routes") == FALSE){dir.create("./models/Routes")}
+if(dir.exists("./other_data/routes") == FALSE){dir.create("./other_data/routes")}
+
 
 ## Creating the dataframe -----
 # Loading in the 2010 layer you want to use
@@ -31,12 +34,21 @@ N10_sf$ID <- c(1:nrow(N10_sf))
 names(N10_sf) <- c("OHV_2010","geometry","cell_ID")
 
 # Save the grid object
-# st_write(N10_sf,"./other_data/routes/N10_grid.shp", append = FALSE)
 st_write(N10_sf,"./other_data/routes/N10_grid_cleaned.shp", append = FALSE)
 
 
 # In QGIS use grid object to intersect with routes shapefile
-# routes_clipped <- st_read("./other_data/routes/Routes_wholegrid_clipped.shp")
+
+# Get contents of folder in GCS you wish to download to local device
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/04_disturbances/WEMO_routes/")
+
+# Uses library purrr to download all contents of folder
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./other_data/routes","/",basename(x))))
+
 routes_clipped <- st_read("./other_data/routes/Routes_wholegridcleaned_clipped.shp")
 routes_clipped$new_length <- NA
 
@@ -183,6 +195,7 @@ x <- c(0,50,100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,
 low_med <- uniroot(function(x)  function_list[[1]](x) - function_list[[2]](x)  , c(0,400), tol=1e-8)     #214
 med_high <- uniroot(function(x)  function_list[[2]](x) - function_list[[3]](x)  , c(0,400), tol=1e-8)    #392 
 
+if(dir.exists("./figures") == FALSE){dir.create("./figures")}
 ggsave("./figures/routes_figure.jpeg",height = 5, width = 7.7)
 
 

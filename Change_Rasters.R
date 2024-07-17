@@ -33,8 +33,7 @@ plot(mask)
 
 writeRaster(mask,"./other_data/masks/small_ext.tif")
 
-# Loading in the CA half of MDT range shapefile
-ca_dt_range <- st_read("./shapefiles/CA_DTrange/ca_dtrange_web.shp")
+
 dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 
@@ -149,14 +148,6 @@ p
 
 
 
-
-
-
-
-
-
-
-
 ## Creating change raster with only increase and decrease classes for each time step change
 
 stack_reclass <- classify(stack, cbind(3, 5, 2), right=FALSE)
@@ -240,7 +231,6 @@ hist(values(clip_result))
 # Save output
 # Be sure to change name depending on radius and input change raster
 writeRaster(clip_result,"./output_layers/Window1000m_mode_change_1980_2020.tif",overwrite = TRUE)
-
 
 # Creating magnitude increase map for manuscript 
 

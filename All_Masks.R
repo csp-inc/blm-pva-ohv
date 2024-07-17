@@ -1,7 +1,17 @@
 # This script uses the OHV layers that have been cleaned and masked for NLCD and roads and creates rasters that can be 
 # used for creating plots for the OHV manuscript
 
-# Load in packages
+rm(list=ls())
+
+## Loading in packages -----
+list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only = TRUE)
+
+# Use the JSON file to authenticate communication between RStudio and GCS
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 
 
 n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask_roadsmask.tif")
@@ -24,6 +34,8 @@ dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 blank_rast <- mask(blank_rast,dt_range)
 plot(blank_rast)
 
+if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
+if(dir.exists("./other_data/masks") == FALSE){dir.create("./other_data/masks")}
 if(dir.exists("./other_data/masks/all_masks") == FALSE){dir.create("./other_data/masks/all_masks")}
 
 for(i in 1:length(rast_list)){

@@ -10,6 +10,9 @@ lapply(list.of.packages, require, character.only = TRUE)
 # This script contains functions that summarize the OHV route density layers in different ways
 source("./Functions.R")
 
+if(dir.exists("./figures") == FALSE){dir.create("./figures")}
+
+
 # Loads in the mdt range
 dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 st_area(dt_range) # 2.49582e+11 [m^2]

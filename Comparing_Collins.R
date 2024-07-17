@@ -2,18 +2,32 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
+# Use the JSON file to authenticate communication between RStudio and GCS
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 
+bucket_name <- "gs://pva_image_processing"
 
 # Loading in the new 2010 and 2020 layers
 N2010 <- rast("./output_layers/N10_04052024.tif")
 N2020 <- rast("./output_layers/N20_04052024.tif")
 
 # Loading in the old 2010 and 2020 layers to do some comparison
+
+contents <- gcs_list_objects(bucket = bucket_name,
+                             prefix = "NAIP/NAIP_collins_rasters/")
+
+if(dir.exists("./Old_OHV") == FALSE){dir.create("./Old_OHV")}
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = bucket_name, overwrite = TRUE,
+                 saveToDisk = paste0("./Old_OHV","/",basename(x))))
+
+
 N10_old <- rast("./Old_OHV/NAIP_2010_collins.tif")
 N20_old <- rast("./Old_OHV/NAIP_2019_collins.tif")
 N20_old <- N20_old[[1]]

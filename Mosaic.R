@@ -23,6 +23,9 @@ gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 
 bucket_name <- "gs://pva_image_processing"
 
+# Create folder for storing output rasters
+if(dir.exists("./output_layers") == FALSE){dir.create("./output_layers")}
+
 ##### 2010 -----
 # Create a new folder
 if(dir.exists("./raw_inference/NAIP_2010_2012") == FALSE){dir.create("./raw_inference/NAIP_2010_2012")}
@@ -50,6 +53,20 @@ plot(ohv_2010_cleaned.merged[[1]], background="black")
 NAIP_2010_mosaic <- ohv_2010_cleaned.merged[[1]]
 
 # Loading in the MDT range
+# Creating a directory to hold the shapefile
+if(dir.exists("./shapefiles") == FALSE){dir.create("./shapefiles")}
+if(dir.exists("./shapefiles/DTrange") == FALSE){dir.create("./shapefiles/DTrange")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/02_tortoise/DTrange/")
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/DTrange","/",basename(x))))
+
+dt_range_web <- st_read("./shapefiles/DTrange/dtrange.shp") %>% st_transform("EPSG:3857")
+st_write(dt_range_web,"./shapefiles/DTrange/dtrange_web.shp",append=FALSE)
+
 dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 # Masking and cropping to the MDT range
@@ -110,6 +127,19 @@ writeRaster(NAIP_2020_mosaic_cropped,"./output_layers/NAIP_2020_cropped.tif", ov
 
 
 ##### 1970s -----
+
+## Loading in some cropping polygons created in QGIS for clipping historical data
+if(dir.exists("./shapefiles/cropping") == FALSE){dir.create("./shapefiles/cropping")}
+
+# Get contents of folder in GCS you wish to download to local device
+contents <- gcs_list_objects(bucket = bucket_name,
+                             prefix = "cropping/")
+
+# Uses library purrr to download all contents of folder
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = bucket_name, overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/cropping","/",basename(x))))
 
 # Netr data
 if(dir.exists("./raw_inference/netr_70s") == FALSE){dir.create("./raw_inference/netr_70s")}

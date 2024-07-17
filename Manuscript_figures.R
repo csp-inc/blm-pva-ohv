@@ -149,7 +149,7 @@ tot_length <- cbind(tot_length,decades)
 tot_length_long$decades <- c("1970","1970","1970","1980","1980","1980","2010","2010","2010","2020","2020","2020")
 
 
-tot_length_long2 <- tot_length_long %>% filter(scale != "min_length")
+tot_length_long2 <- tot_length_long %>% filter(scale != "max_length")
 
 # ggplot(tot_length_long , aes(x=decades, y=length/1000, color = scale, fill = scale)) +
 #   geom_col(position = "dodge") + ylab("Total OHV route length (km)") + xlab("Decade") +
@@ -169,7 +169,7 @@ ggplot(tot_length_long2 , aes(x=decades, y=length/1000, color = scale, fill = sc
                           axis.title.x = element_text(color="black",size=12),legend.text = element_text(color="black",size=12))+
   scale_fill_manual(values = c("#528970","#18416e"),labels=c("Median","Minimum"),name="") +
   scale_color_manual(values = c("#528970","#18416e"),labels=c("Median","Minimum"),name="") +
-  scale_y_continuous(breaks = c(0,1000000,2000000,3000000,4000000,5000000), name = "Total OHV route length (km)",labels = c("0","1E6","2E6","3E6","4E6","5E6"))+ 
+  scale_y_continuous(breaks = c(0,500000,1000000,1500000,2000000,2500000), name = "Total OHV route length (million km)",labels = c("0","0.5","1","1.5","2","2.5"))+ 
   scale_x_discrete(name = "Decade", label = c("1970s","1980s","2010s","2020s"))
 
 

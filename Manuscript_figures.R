@@ -277,17 +277,11 @@ plot(change_mean_masked)
 
 # Figure was created in Q GIS
 
-
-
 ## Stats for figure 6
+if(dir.exists("./shapefiles/2011RecoveryUnits") == FALSE){dir.create("./shapefiles/2011RecoveryUnits")}
 
 RU <- st_read("./shapefiles/2011RecoveryUnits/Recovery_units_web.shp")
-RU
 st_area(RU)/1000/1000
-
-TCA <- st_read("./shapefiles/MDT_TCA/MDT_TCA.shp")%>%st_transform("EPSG:3857")
-TCA 
-st_area(TCA)/1000/1000
 
 
 n80 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
@@ -297,7 +291,6 @@ layers <- c(n80,N10,N20)
 layers
 
 RU_stats <- list()
-TCA_stats <- list()
 
 for(i in 1:nrow(RU)){
   shape <- vect(RU[i,])
@@ -315,6 +308,14 @@ for(i in 1:nrow(RU)){
 }
 names(RU_stats) <- RU$Unit_Name
 RU_stats <- bind_rows(RU_stats)
+
+
+
+TCA <- st_read("./shapefiles/MDT_TCA/MDT_TCA.shp")%>%st_transform("EPSG:3857")
+TCA 
+st_area(TCA)/1000/1000
+
+TCA_stats <- list()
 
 for(i in 1:nrow(TCA)){
   shape <- vect(TCA[i,])

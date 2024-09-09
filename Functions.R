@@ -427,12 +427,17 @@ salt_clean <- function(x,writeR = FALSE){
 
 # This function masks each OHV density layer with the correct NLCD mask (water and developed low medium and high, NLCD)
 # Apply to a rasterstack
-nlcd_mask <- function(x, writeR = FALSE){
+nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
   masks <- list.files("./other_data/masks/NLCD", recursive = TRUE, full.names = TRUE, pattern = "n21")
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
     mask <- rast(masks[i])
+    if(updateNA){
     raster_masked <- mask(raster,mask, inverse = TRUE)
+    }
+    if(update0){
+    raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+    }
     names(raster_masked) <- paste0(names(raster_masked),"_nlcdmask")
     if(writeR){
       writeRaster(raster_masked, file = paste0("./output_layers/",names(raster_masked),".tif"),overwrite = TRUE)
@@ -444,13 +449,18 @@ nlcd_mask <- function(x, writeR = FALSE){
 
 # This function masks each OHV density layer with the correct TIGER roads mask (S1100, S1200 and S1400)
 # Apply to a rasterstack
-roads_mask <- function(x, writeR = FALSE){
+roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
   masks <- list.files("./other_data/masks/TIGER", recursive = TRUE, full.names = TRUE)
   masks <- c(masks[1],masks) # Need to repeat the 1992 roads mask for the 1970s
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
     mask <- rast(masks[i])
-    raster_masked <- mask(raster,mask, inverse = TRUE)
+    if(updateNA){
+      raster_masked <- mask(raster,mask, inverse = TRUE)
+    }
+    if(update0){
+      raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+    }
     names(raster_masked) <- paste0(names(raster_masked),"_roadsmask")
     if(writeR){
       writeRaster(raster_masked, file = paste0("./output_layers/",names(raster_masked),".tif"),overwrite = TRUE)
@@ -461,11 +471,16 @@ roads_mask <- function(x, writeR = FALSE){
 }
 
 # This function masks out cells for which there is not an OHV density estimate in each decade
-small_ex_mask <- function(x, writeR = FALSE){
+small_ex_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
   mask <- rast("./other_data/masks/small_ext.tif")
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
-    raster_masked <- mask(raster,mask)
+    if(updateNA){
+      raster_masked <- mask(raster,mask, inverse = TRUE)
+    }
+    if(update0){
+      raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+    }
     names(raster_masked) <- paste0(names(raster_masked),"_small_ext")
     if(writeR){
       writeRaster(raster_masked, file = paste0("./output_layers/",names(raster_masked),".tif"),overwrite = TRUE)

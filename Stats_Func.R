@@ -11,10 +11,10 @@ lapply(list.of.packages, require, character.only = TRUE)
 
 source("./Functions.R")
 
-n1970 <- rast("./output_layers/n70_04052024.tif")
-n1980 <- rast("./output_layers/n80_04052024.tif")
-N2010 <- rast("./output_layers/N10_04052024.tif")
-N2020 <- rast("./output_layers/N20_04052024.tif")
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
 
 stack <- c(n1970,n1980,N2010,N2020)
 
@@ -99,7 +99,7 @@ ggplot(output_salt_cleaned, aes(fill=Class, y=Proportion, x=Decade, label = past
                                                                                      axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
 # Creates "cleaned"
-stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = TRUE)
+stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_nlcd)
 output_nlcd_mask <- class_summary(stack_masked_nlcd)
 
@@ -116,7 +116,7 @@ ggplot(output_nlcd_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0(
 
 
 # Creates "cleaned2"
-stack_masked_roads <- roads_mask(salt_cleaned_stack, writeR = FALSE)
+stack_masked_roads <- roads_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_roads)
 output_roads_mask <- class_summary(stack_masked_roads)
 
@@ -132,7 +132,7 @@ ggplot(output_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0
 
 
 # Creates "cleaned3"
-stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = TRUE)
+stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_nlcd_roads)
 output_nlcd_roads_mask <- class_summary(stack_masked_nlcd_roads)
 
@@ -150,19 +150,19 @@ ggplot(output_nlcd_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = p
 
 # Running the moving window on whichever stack you want
 
-# NOTE, you must call the stack you wantt to use "stack_masked" 
+# NOTE, you must call the stack you want to use "stack_masked" 
 stack_masked <- stack
 # options are stack, stack_masked_nlcd, stack_masked_roads or stack_masked_nlcd_roads
 # these are associated with normal layers, layers with "cleaned", layers with "cleaned2", and layers with "cleaned3"
 
 stack_foc <- max_window(stack_masked, radius = 400, writeR = FALSE)
 # plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_categorical_max_800m.tif")
+writeRaster(stack_foc,"./output_layers/OHV_categorical_max_800m_cleaned.tif")
 
 
 stack_foc_200 <- max_window(stack_masked, radius = 200, writeR = FALSE)
 # plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_categorical_max_400m.tif")
+writeRaster(stack_foc_200,"./output_layers/OHV_categorical_max_400m_cleaned.tif")
 
 
 
@@ -170,25 +170,47 @@ stack_masked_binary <- classify(stack_masked, cbind(1, 5, 1), right=FALSE)
 
 stack_foc <- max_window(stack_masked_binary, radius = 400, writeR = FALSE)
 # plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_binary_max_800m.tif")
+writeRaster(stack_foc,"./output_layers/OHV_binary_max_800m_cleaned.tif")
 
 
 stack_foc_200 <- max_window(stack_masked_binary, radius = 200, writeR = FALSE)
 # plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_binary_max_400m.tif")
+writeRaster(stack_foc_200,"./output_layers/OHV_binary_max_400m_cleaned.tif")
 
 
 stack_masked_high <- classify(stack_masked, cbind(0, 3, 0), right=FALSE)
 stack_masked_high <- classify(stack_masked_high, cbind(4, 5, 1), right=FALSE)
+plot(stack_masked_high)
+writeRaster(stack_masked_high[[1]],"./output_layers/netr_1970_high.tif")
+writeRaster(stack_masked_high[[2]],"./output_layers/netr_1980_high.tif")
+writeRaster(stack_masked_high[[3]],"./output_layers/NAIP_2010_high.tif")
+writeRaster(stack_masked_high[[4]],"./output_layers/NAIP_2020_high.tif")
 
-stack_foc <- mode_window(stack_masked_high, radius = 400, writeR = FALSE)
+
+stack_foc <- max_window(stack_masked_high, radius = 400, writeR = FALSE)
 # plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_high_max_800m.tif")
+writeRaster(stack_foc,"./output_layers/OHV_high_max_800m_cleaned.tif")
 
 
-stack_foc_200 <- mode_window(stack_masked_high, radius = 200, writeR = FALSE)
+stack_foc_200 <- max_window(stack_masked_high, radius = 200, writeR = FALSE)
 # plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_high_max_400m.tif")
+writeRaster(stack_foc_200,"./output_layers/OHV_high_max_400m_cleaned.tif")
 
 
+stack_masked_merged <- classify(stack_masked, cbind(1, 3, 2), right=FALSE)
+# plot(stack_masked_merged)
+# hist(values(stack_masked_merged[[1]]))
+writeRaster(stack_masked_merged[[1]],"./output_layers/netr_1970_merged_cleaned3.tif")
+writeRaster(stack_masked_merged[[2]],"./output_layers/netr_1980_merged_cleaned3.tif")
+writeRaster(stack_masked_merged[[3]],"./output_layers/NAIP_2010_merged_cleaned3.tif")
+writeRaster(stack_masked_merged[[4]],"./output_layers/NAIP_2020_merged_cleaned3.tif")
+
+stack_foc <- max_window(stack_masked_merged, radius = 400, writeR = FALSE)
+# plot(stack_foc)
+writeRaster(stack_foc,"./output_layers/OHV_merged_max_800m_cleaned.tif")
+
+
+stack_foc_200 <- max_window(stack_masked_merged, radius = 200, writeR = FALSE)
+# plot(stack_foc_200)
+writeRaster(stack_foc_200,"./output_layers/OHV_merged_max_400m_cleaned.tif")
 

@@ -1,3 +1,20 @@
+## ---------------------------
+##
+## Script name: 09_GLM.R
+##
+## This runs the GLM to test the effect of year on probability of a cell containing OHV
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+
 rm(list=ls())
 
 ## Loading in packages -----
@@ -7,6 +24,12 @@ list.of.packages <- c("tidyverse","spgwr","terra","sf","dplyr", "performance",
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
+
+## Use the JSON file to authenticate communication between RStudio and GCS -----
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
+bucket_name<-"gs://csp_tortoisehub"
+
+## Create necessary local folders -----
 
 # Change the presentation of decimal numbers to 4 and avoid scientific notation
 options(digits=4, scipen=999)

@@ -1,16 +1,36 @@
-# This script pulls in the inference output tiles from GCS and merges them together to form
-# range wide OHV layers.
+## ---------------------------
+##
+## Script name: 01_Mosaic.R
+##
+## This script pulls in the inference output tiles from GCS and merges them together to form
+## range wide OHV layers.
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+##
+## This script pulls in the inference output tiles from GCS and merges them together to form
+## range wide OHV layers.
+##
+## For the 2010 and 2020 decades, the inference outputs live in a single folder in GCS.
+## For the 1970 and 1980 decades, the inference outputs live in different folders,
+## which represent CA and non-CA extents of the range.
+##
+## In addition, for the 1970s decade only, there BLM NOC data is used to augment coverage
+## for this time step. This data is pulled in separately from the NETR data and 
+## then merged together.
 
-# For the 2010 and 2020 decades, the inference outputs live in a single folder in GCS.
-# For the 1970 and 1980 decades, the inference outputs live in different folders,
-# which represent CA and non-CA extents of the range.
 
-# In addition, for the 1970s decade only, there BLM NOC data is used to augment coverage
-# for this time step. This data is pulled in separately from the NETR data and 
-# then merged together.
+rm(list=ls())
 
-
-# Load the necessary package(s)
+## Load packages -----
 
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer","googleCloudStorageR","googleAuthR",
                       "remotes","purrr","foreach","doParallel","furrr","tictoc","exactextractr","stars")
@@ -18,12 +38,11 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
-# Use the JSON file to authenticate communication between RStudio and GCS
+## Use the JSON file to authenticate communication between RStudio and GCS -----
 gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
-
 bucket_name <- "gs://pva_image_processing"
 
-# Create folder for storing output rasters
+## Create necessary local folders -----
 if(dir.exists("./output_layers") == FALSE){dir.create("./output_layers")}
 
 ##### 2010 -----

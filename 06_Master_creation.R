@@ -1,38 +1,64 @@
-# This script takes the OHV layers and formats them for modeling and trend analysis
+## ---------------------------
+##
+## Script name: 06_Master_creation.R
+##
+## This script takes the OHV layers and formats them for modeling and trend analysis
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+
 
 rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","tidyr","lme4","stars","googleCloudStorageR","googleAuthR")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
-# Use the JSON file to authenticate communication between RStudio and GCS
+## Use the JSON file to authenticate communication between RStudio and GCS -----
 gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
+bucket_name<-"gs://csp_tortoisehub"
 
+## Create necessary local folders -----
 if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
 
 ### Part 1: extracting OHV density values for each chip for each decade -----
 # Choose which layers you want to load in to create the master csv
 
-# n1970 <- rast("./output_layers/n70_04052024.tif")
-# n1980 <- rast("./output_layers/n80_04052024.tif")
-# N2010 <- rast("./output_layers/N10_04052024.tif")
-# N2020 <- rast("./output_layers/N20_04052024.tif")
+# Unmasked
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
 
-# Creates cleaned 3
-n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask_roadsmask.tif")
-n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
-N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask_roadsmask.tif")
-N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+# # Cleaned
+# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_nlcdmask.tif")
+# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask.tif")
+# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask.tif")
+# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask.tif")
+# 
+# # Cleaned 2
+# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_roadsmask.tif")
+# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_roadsmask.tif")
+# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_roadsmask.tif")
+# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_roadsmask.tif")
+# 
+# # Cleaned 3
+# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_nlcdmask_roadsmask.tif")
+# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask_roadsmask.tif")
+# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
+# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask_roadsmask.tif")
 
-
-n1970 <- rast("./output_layers/netr_1970_masked_9_nlcdmask.tif")
-n1980 <- rast("./output_layers/netr_1980_masked_9_nlcdmask.tif")
-N2010 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask.tif")
-N2020 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask.tif")
 
 
 # Stacking
@@ -128,10 +154,10 @@ names(values_df) <- c("V1970","V1980","V2010","V2020","raster_cell","grid_cell",
 
 # # Saving as a shapefile with geometry
 if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
-# st_write(values_df,"./other_data/master/master_cells_cleaned3.shp",append=FALSE)
+# st_write(values_df,"./other_data/master/master_cells.shp",append=FALSE)
 
 # Removing geometry to save as a .csv
 values_df_no_geom <- as.data.frame(values_df[,-8])
 head(values_df_no_geom)
 
-write.csv(values_df_no_geom,"./other_data/master/master_cells_cleaned.csv")
+write.csv(values_df_no_geom,"./other_data/master/master_cells.csv")

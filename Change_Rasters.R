@@ -8,10 +8,10 @@ if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
 
-n1970 <- rast("./output_layers/n70_04052024.tif")
-n1980 <- rast("./output_layers/n80_04052024.tif")
-N2010 <- rast("./output_layers/N10_04052024.tif")
-N2020 <- rast("./output_layers/N20_04052024.tif")
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
 
 # Stacking
 stack <- c(n1970,n1980,N2010,N2020)

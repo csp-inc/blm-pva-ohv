@@ -1,14 +1,39 @@
-# This script applies functions created in script Functions.R to the OHV layers and creates visualizations
+## ---------------------------
+##
+## Script name: 05_Stats_func.R
+##
+## This script applies functions stored in script Functions.R to the OHV layers and creates visualizations.
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+## This is where the moving windows are applied to the various reclassified/cleaned OHV layers.
+## The outputs of these moving window functions should be uploaded to data > 06_covariates_post_focal > OHV_routes_roads
+
+
+rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
+## Use the JSON file to authenticate communication between RStudio and GCS -----
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
+bucket_name<-"gs://csp_tortoisehub"
 
+## Create necessary local folders -----
 
+## Load in the necessary functions -----
 source("./Functions.R")
 
 n1970 <- rast("./output_layers/netr_1970_cat.tif")
@@ -18,6 +43,8 @@ N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
 
 stack <- c(n1970,n1980,N2010,N2020)
 
+
+## Part I: Creating summary visualizations -----
 output <- class_summary(stack)
 
 
@@ -39,8 +66,7 @@ ggplot(output, aes(fill=Class, y=Proportion, x=Decade, label = paste0(round(100*
                     labels=c("None","Low", "Med", "High")) + theme_classic() + theme(axis.text.x = element_text(color="black", size = 12),
                                                                                      axis.text.y = element_text(color = "black", size = 12),legend.title = element_text(face = "bold"))
 
-
-
+# Joins classes medium and high into one category
 output_join <- join2_4(output)
 
 # # Proportion of total mdt area with each OHV class
@@ -61,7 +87,7 @@ ggplot(output_join, aes(fill= factor(Class, c("0","1","2")), y=Proportion, x=Dec
                                                                                     axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
 
-
+# Joins classes low, medium and high into one category
 output_binary <- join1_4(output)
 
 # # Proportion of total mdt area with each OHV class
@@ -81,11 +107,13 @@ ggplot(output_binary, aes(fill= factor(Class, c("0","1")), y=Proportion, x=Decad
                                                                                     axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
 
+## Part II: Creating visualizations with cleaned layers -----
 
+# Function created in Functions.R
+# This function turns any cell with a value greater to 0 to 0 IF that cell is surrounded by 0 (aka it removes floating road pixels)
 salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
 
 plot(salt_cleaned_stack)
-
 
 output_salt_cleaned <- class_summary(salt_cleaned_stack)
 
@@ -98,6 +126,8 @@ ggplot(output_salt_cleaned, aes(fill=Class, y=Proportion, x=Decade, label = past
                     labels=c("None","Low", "Med", "High")) + theme_classic() + theme(axis.text.x = element_text(color="black"),
                                                                                      axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
+# Function created in Functions.R
+# This function applies the nlcd mask created in 03_NLCD_masks.R to the ohv layer
 # Creates "cleaned"
 stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_nlcd)
@@ -114,7 +144,8 @@ ggplot(output_nlcd_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0(
                                                                                      axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
 
-
+# Function created in Functions.R
+# This function applies the roads mask created in 03_Road_masks.R to the ohv layer
 # Creates "cleaned2"
 stack_masked_roads <- roads_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_roads)
@@ -130,7 +161,7 @@ ggplot(output_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0
                     labels=c("None","Low", "Med", "High")) + theme_classic() + theme(axis.text.x = element_text(color="black"),
                                                                                      axis.text.y = element_text(color = "black"),legend.title = element_text(face = "bold"))
 
-
+# Applies the roads mask function to the stack already masked for NLCD
 # Creates "cleaned3"
 stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
 plot(stack_masked_nlcd_roads)
@@ -148,69 +179,73 @@ ggplot(output_nlcd_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = p
 
 
 
-# Running the moving window on whichever stack you want
+## Part III: Running loop to clean layers and run moving window over them and save output layers -----
 
-# NOTE, you must call the stack you want to use "stack_masked" 
-stack_masked <- stack
-# options are stack, stack_masked_nlcd, stack_masked_roads or stack_masked_nlcd_roads
-# these are associated with normal layers, layers with "cleaned", layers with "cleaned2", and layers with "cleaned3"
+classifications <- c("cat","bin","high","merged")
+classifications_full <- c("categorical","binary","high","merged")
+cleaning <- c("","cleaned","cleaned2","cleaned3")
+window_rad <- c(200,400)
 
-stack_foc <- max_window(stack_masked, radius = 400, writeR = FALSE)
-# plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_categorical_max_800m_cleaned.tif")
+for(i in 1:length(classifications)){
+  files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = classifications[i])
+  r1 <- rast(files_list[3])
+  r2 <- rast(files_list[4])
+  r3 <- rast(files_list[1])
+  r4 <- rast(files_list[2])
+  stack <- c(r1,r2,r3,r4)
+  names(stack) <- paste(names(stack), classifications[i], sep="_")
+  plot(stack)
+  for(j in 1:length(cleaning)){
+    if(j == 1){
+      stack_masked <- stack
+    }
+    if(j == 2){
+      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
+      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "nlcdmask")
+      files_list <- files_list[grepl(classifications[i],files_list)]
+      for(k in 1:4){
+        r <- rast(files_list[k])
+        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned.tif"),overwrite = TRUE)
+      }
+    }
+    if(j == 3){
+      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
+      stack_masked <- roads_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "roadsmask")
+      files_list <- files_list[grepl(classifications[i],files_list)]
+      for(k in 1:4){
+        r <- rast(files_list[k])
+        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned2.tif"),overwrite = TRUE)
+      }
+    }
+    if(j == 4){
+      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
+      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
+      stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "nlcdmask_roadsmask")
+      files_list <- files_list[grepl(classifications[i],files_list)]
+      for(k in 1:4){
+        r <- rast(files_list[k])
+        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned3.tif"),overwrite = TRUE)
+      }
+    }
+    for(k in 1:length(window_rad)){
+      stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      writeRaster(stack_max, paste0("./output_layers/OHV_", classifications_full[i],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
+      
+      stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications_full[i],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
+      
+      stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications_full[i],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+    }
+  }
+}
 
 
-stack_foc_200 <- max_window(stack_masked, radius = 200, writeR = FALSE)
-# plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_categorical_max_400m_cleaned.tif")
+# Upload the cleaned/cleaned2/cleaned3 rasters to data > 05 covariate outputs > OHV
+# Upload the moving window rasters to data > 06 covariates post focal > OHV_routes_roads
 
 
-
-stack_masked_binary <- classify(stack_masked, cbind(1, 5, 1), right=FALSE)
-
-stack_foc <- max_window(stack_masked_binary, radius = 400, writeR = FALSE)
-# plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_binary_max_800m_cleaned.tif")
-
-
-stack_foc_200 <- max_window(stack_masked_binary, radius = 200, writeR = FALSE)
-# plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_binary_max_400m_cleaned.tif")
-
-
-stack_masked_high <- classify(stack_masked, cbind(0, 3, 0), right=FALSE)
-stack_masked_high <- classify(stack_masked_high, cbind(4, 5, 1), right=FALSE)
-plot(stack_masked_high)
-writeRaster(stack_masked_high[[1]],"./output_layers/netr_1970_high.tif")
-writeRaster(stack_masked_high[[2]],"./output_layers/netr_1980_high.tif")
-writeRaster(stack_masked_high[[3]],"./output_layers/NAIP_2010_high.tif")
-writeRaster(stack_masked_high[[4]],"./output_layers/NAIP_2020_high.tif")
-
-
-stack_foc <- max_window(stack_masked_high, radius = 400, writeR = FALSE)
-# plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_high_max_800m_cleaned.tif")
-
-
-stack_foc_200 <- max_window(stack_masked_high, radius = 200, writeR = FALSE)
-# plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_high_max_400m_cleaned.tif")
-
-
-stack_masked_merged <- classify(stack_masked, cbind(1, 3, 2), right=FALSE)
-# plot(stack_masked_merged)
-# hist(values(stack_masked_merged[[1]]))
-writeRaster(stack_masked_merged[[1]],"./output_layers/netr_1970_merged_cleaned3.tif")
-writeRaster(stack_masked_merged[[2]],"./output_layers/netr_1980_merged_cleaned3.tif")
-writeRaster(stack_masked_merged[[3]],"./output_layers/NAIP_2010_merged_cleaned3.tif")
-writeRaster(stack_masked_merged[[4]],"./output_layers/NAIP_2020_merged_cleaned3.tif")
-
-stack_foc <- max_window(stack_masked_merged, radius = 400, writeR = FALSE)
-# plot(stack_foc)
-writeRaster(stack_foc,"./output_layers/OHV_merged_max_800m_cleaned.tif")
-
-
-stack_foc_200 <- max_window(stack_masked_merged, radius = 200, writeR = FALSE)
-# plot(stack_foc_200)
-writeRaster(stack_foc_200,"./output_layers/OHV_merged_max_400m_cleaned.tif")
 

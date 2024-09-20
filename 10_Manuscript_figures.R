@@ -1,3 +1,22 @@
+## ---------------------------
+##
+## Script name: 10_Manuscript_figures.R
+##
+## This script creates figures used for the OHV manuscript
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+##
+
+
 # This script creates plots for the OHV manuscript
 rm(list=ls())
 ## Loading in packages -----
@@ -7,9 +26,8 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
-# This script contains functions that summarize the OHV route density layers in different ways
-source("./Functions.R")
 
+## Create necessary local folders -----
 if(dir.exists("./figures") == FALSE){dir.create("./figures")}
 
 
@@ -62,7 +80,7 @@ st_area(dt_range) # 2.49582e+11 [m^2]
 # ggsave(filename = "./figures/figure_3.1.jpeg",height = 7.5, width = 10)
 
 
-### Figure 5 -----
+### Figure 6 -----
 
 ## Using consistent extent to calculate OHV route length stats for each year
 values_df <- read.csv("./other_data/master/master_cells_cleaned3.csv")
@@ -188,7 +206,7 @@ ggplot(tot_length_long2 , aes(x=decades, y=length/1000, color = scale, fill = sc
 #   geom_smooth(data = tot_length,aes(x=as.integer(decades), y=mean_length/1000),method = "lm", se = FALSE, color = "black")
 #   
   
-ggsave(filename = "./figures/figure_5.jpeg",height = 4.5, width = 6)
+ggsave(filename = "./figures/figure_6.jpeg",height = 4.5, width = 6)
 
 # # Loads in csv created in script "Master_creation.R"
 # values_sample <- read.csv("./other_data/master/master_cells_cleaned3.csv")
@@ -210,13 +228,13 @@ ggsave(filename = "./figures/figure_5.jpeg",height = 4.5, width = 6)
 # 
 # ggsave(filename = "./figures/figure_5.jpeg",height = 7.5, width = 10)
 
-### Figure 6 -----
+### Figure 4 -----
 
 # Loads in original layers created in scripts "Mosaick.R" and "Processing.R"
-n1970 <- rast("./output_layers/n70_04052024.tif")
-n1980 <- rast("./output_layers/n80_04052024.tif")
-N2010 <- rast("./output_layers/N10_04052024.tif")
-N2020 <- rast("./output_layers/N20_04052024.tif")
+n1970 <- rast("./output_layers/n70_cat.tif")
+n1980 <- rast("./output_layers/n80_cat.tif")
+N2010 <- rast("./output_layers/N10_cat.tif")
+N2020 <- rast("./output_layers/N20_cat.tif")
 
 # Stacks
 stack <- c(n1970,n1980,N2010,N2020)
@@ -227,10 +245,10 @@ stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = TRUE) # Saves 
 
 # Figure was created in Q GIS
 
-### Figure 6 -----
+### Figure 7 -----
 # Loads in cleaned and masked layers for 1980s and 2020s
-n80 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+n80 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask_roadsmask.tif")
+N20 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask_roadsmask.tif")
 
 n80 <- classify(n80, cbind(2, 3, 151), right=FALSE)
 n80 <- classify(n80, cbind(4, 5, 451), right=FALSE)
@@ -277,16 +295,16 @@ plot(change_mean_masked)
 
 # Figure was created in Q GIS
 
-## Stats for figure 6
+## Stats for figure 7
 if(dir.exists("./shapefiles/2011RecoveryUnits") == FALSE){dir.create("./shapefiles/2011RecoveryUnits")}
 
 RU <- st_read("./shapefiles/2011RecoveryUnits/Recovery_units_web.shp")
 st_area(RU)/1000/1000
 
 
-n80 <- rast("./output_layers/netr_1980_masked_9_nlcdmask_roadsmask.tif")
-N10 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask_roadsmask.tif")
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
+n80 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask_roadsmask.tif")
+N10 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
+N20 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask_roadsmask.tif")
 layers <- c(n80,N10,N20)
 layers
 
@@ -407,37 +425,3 @@ for(i in 1:nrow(TCA)){
 TCA_change_stats <- bind_rows(TCA_change_stats)
 TCA_change_stats <- filter(TCA_change_stats,OHV_dens == 2)
 
-
-
-### Figure 8 -----
-
-#### Mode OHV class in the 1000m cell -----
-habsuit_1000 <- rast("./other_data/habsuit.tif") %>% project("EPSG:3857",res = 1000)
-habsuit_1000
-# hist(values(habsuit_1000))
-
-habsuit_1000_class <- classify(habsuit_1000, cbind(-1, .25, 100), right=TRUE)
-habsuit_1000_class <- classify(habsuit_1000_class, cbind(.25, .5, 200), right=TRUE)
-habsuit_1000_class <- classify(habsuit_1000_class, cbind(.5, .75, 300), right=TRUE)
-habsuit_1000_class <- classify(habsuit_1000_class, cbind(.75, 1, 400), right=FALSE)
-
-par(mfrow = c(1,2))
-plot(habsuit_1000_class)
-hist(values(habsuit_1000_class))
-# min(values(habsuit_class), na.rm = TRUE)
-dev.off()
-
-N20 <- rast("./output_layers/NAIP_2020_masked_9_nlcdmask_roadsmask.tif")
-N20_class <- N20
-unique(values(N20_class))
-plot(N20_class)
-
-N20_1km_class_mode <- project(N20_class,habsuit_1000, method = "mode")
-N20_1km_class_mode
-plot(N20_1km_class_mode)
-
-
-combo_1km_class_mode <- habsuit_1000_class-N20_1km_class_mode
-writeRaster(combo_1km_class_mode,"./output_layers/combo_1km_class_sep_mode.tif",overwrite = TRUE)
-
-table(values(combo_1km_class_mode))

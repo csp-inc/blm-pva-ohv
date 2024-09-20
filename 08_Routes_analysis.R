@@ -1,5 +1,21 @@
+## ---------------------------
+##
+## Script name: 08_Routes_analysis.R
+##
+## This script uses the WEMO routes layer to validate the OHV output
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 09/20/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+
 rm(list=ls())
-# This script uses the WEMO routes layer to validate the OHV output
 
 ## Loading in packages -----
 list.of.packages <- c("googleAuthR","googleCloudStorageR","terra","sf","dplyr", "performance",
@@ -8,23 +24,23 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
-# Authorizing GCS access
+## Use the JSON file to authenticate communication between RStudio and GCS -----
 gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
 bucket_name<-"gs://csp_tortoisehub"
 
-# Loading in dt range
-dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
-
+## Create necessary local folders -----
 if(dir.exists("./models") == FALSE){dir.create("./models")}
 if(dir.exists("./models/Routes") == FALSE){dir.create("./models/Routes")}
 if(dir.exists("./other_data/routes") == FALSE){dir.create("./other_data/routes")}
 
+# Loading in dt range
+dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 ## Creating the dataframe -----
 # Loading in the 2010 layer you want to use
-# N10 <- rast("./output_layers/N10_04052024.tif")
-# N10 <- rast("./output_layers/NAIP_2010_masked_9.tif")
-N10 <- rast("./output_layers/NAIP_2010_masked_9_nlcdmask_roadsmask.tif")
+# N10 <- rast("./output_layers/N10_cat.tif")
+# N10 <- rast("./output_layers/NAIP_2010_cat_masked_9.tif")
+N10 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
 
 
 # Convert raster to sf object
@@ -164,7 +180,7 @@ category_colors <- c("None" = "#a69d8b", "Low" = "#fae51e", "Medium" = "darkoran
 legend_order <- c("None", "Low", "Medium", "High")
 
 
-### Figure 7 ------
+### Figure 5 ------
 plot1 <- ggplot(data = pred_dat, aes(x = x, y = predicted, colour = factor(OHV.density,levels = legend_order)))+
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = factor(OHV.density, levels = legend_order)), alpha = 0.1, linetype = "dashed", size = 0.25)+
   geom_line(size = 0.75) + 

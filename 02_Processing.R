@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 09/20/2024
+## Date last updated: 10/10/2024
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -47,7 +47,7 @@ N20 <- rast("./output_layers/NAIP_2020_cropped.tif")
 # Stack check
 stack <- c(n70,n80,N10,N20)
 
-names(stack) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
+names(stack) <- c("netr_1970_cat","netr_1980_cat","NAIP_2010_cat","NAIP_2020_cat")
 
 plot(stack,main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 
@@ -67,14 +67,15 @@ mask <- mask(mask,n80)
 mask <- mask(mask,n70)
 mask <- classify(mask, cbind(0, 5, 1), right=FALSE)
 plot(mask)
-writeRaster(mask,"./other_data/masks/small_ext.tif")
+writeRaster(mask,"./other_data/masks/small_ext.tif",overwrite=TRUE)
 
 
 # Create raster stacks classified in different ways
 
 # 1) Binary (presence absence layer)
 stack_binary <- classify(stack, cbind(1, 5, 1), right=FALSE)
-names(stack_binary) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
+
+names(stack_binary) <- c("netr_1970_bin","netr_1980_bin","NAIP_2010_bin","NAIP_2020_bin")
 
 plot(stack_binary, main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 
@@ -87,7 +88,7 @@ writeRaster(stack_binary[[4]],"./output_layers/NAIP_2020_bin.tif", overwrite = T
 stack_high <- classify(stack, cbind(0, 3, 0), right=FALSE)
 stack_high <- classify(stack_high, cbind(4, 5, 1), right=FALSE)
 
-names(stack_high) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
+names(stack_high) <- c("netr_1970_high","netr_1980_high","NAIP_2010_high","NAIP_2020_high")
 
 plot(stack_high, main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 
@@ -99,7 +100,7 @@ writeRaster(stack_high[[4]],"./output_layers/NAIP_2020_high.tif", overwrite = TR
 # 3) Merged (ohv class low and medium (1 and 2) is merged into 2)
 stack_merged <- classify(stack, cbind(1, 3, 2), right=FALSE)
 
-names(stack_merged) <- c("netr_1970","netr_1980","NAIP_2010","NAIP_2020")
+names(stack_merged) <- c("netr_1970_merged","netr_1980_merged","NAIP_2010_merged","NAIP_2020_merged")
 
 plot(stack_merged, main = c("netr_1970","netr_1980","NAIP_2010","NAIP_2020"))
 

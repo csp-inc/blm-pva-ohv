@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 09/20/2024
+## Date last updated: 10/10/2024
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -38,38 +38,37 @@ if(dir.exists("./other_data/roads") == FALSE){dir.create("./other_data/roads")}
 dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 # Downloading roads data from GCS
-# 1) 1992 data
-roads1992_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/TIGER_roads_1992")
-roads1992_contents <- roads1992_contents$name
-roads1992_contents <- roads1992_contents[grepl("merged",roads1992_contents)]
+# 1) 2000 data
+roads2000_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/roads-merged/TIGER_2000")
+roads2000_contents <- roads2000_contents$name
 
-purrr::map(roads1992_contents, function(x)
+purrr::map(roads2000_contents, function(x)
   gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
                  saveToDisk = paste0("./other_data/roads/",basename(x))))
 
 
-# 2) 2012 data
-roads2012_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/TIGER_roads_2012")
-roads2012_contents <- roads2012_contents$name
+# 2) 2011 data
+roads2011_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/roads-merged/TIGER_2011")
+roads2011_contents <- roads2011_contents$name
 
-purrr::map(roads2012_contents, function(x)
+purrr::map(roads2011_contents, function(x)
   gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
                  saveToDisk = paste0("./other_data/roads/",basename(x))))
 
-# 3) 2022 data
-roads2022_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/TIGER_roads_2022")
-roads2022_contents <- roads2022_contents$name
+# 3) 2020 data
+roads2020_contents <- gcs_list_objects(bucket = bucket_name, prefix = "data/05_covariate_outputs/TIGER_roads/roads-merged/TIGER_2020")
+roads2020_contents <- roads2020_contents$name
 
-purrr::map(roads2022_contents, function(x)
+purrr::map(roads2020_contents, function(x)
   gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
                  saveToDisk = paste0("./other_data/roads/",basename(x))))
 
 
 # Reading in roads data
 road_list <- list()
-road_list[[1]] <- st_read("./other_data/roads/merged_filtered_roads1992.shp")
-road_list[[2]] <- st_read("./other_data/roads/TIGER_2012_roads_merged.shp")
-road_list[[3]] <- st_read("./other_data/roads/TIGER_2022_roads_merged.shp")
+road_list[[1]] <- st_read("./other_data/roads/TIGER_2000_merged.shp")
+road_list[[2]] <- st_read("./other_data/roads/TIGER_2011_merged.shp")
+road_list[[3]] <- st_read("./other_data/roads/TIGER_2020_merged.shp")
 
 # Use the 2010 layer as a template to rasterize the roads into
 r <- rast("./output_layers/NAIP_2010_cat.tif")
@@ -79,7 +78,7 @@ if(dir.exists("./other_data/masks") == FALSE){dir.create("./other_data/masks")}
 if(dir.exists("./other_data/masks/TIGER") == FALSE){dir.create("./other_data/masks/TIGER")}
 
 # Create output file names
-file_names <- c("roads1992_mask.tif","roads2012_mask.tif","roads2022_mask.tif")
+file_names <- c("roads2000_mask.tif","roads2011_mask.tif","roads2020_mask.tif")
 
 # Creating the masks
 for (i in 1:length(road_list)){
@@ -99,3 +98,4 @@ for (i in 1:length(road_list)){
   writeRaster(road_rast_masked, paste0("./other_data/masks/TIGER/",file_names[i]))
 }
 
+# plot(road_rast_masked)

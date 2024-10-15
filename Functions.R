@@ -1,3 +1,21 @@
+## ---------------------------
+##
+## Script name: Functions.R
+##
+## This script creates functions to apply to the OHV layers for use in demographic models for tortoise survival.
+##
+## Author: Madeline Standen
+##
+## Date Created: 02/__/2024
+## Date last updated: 10/10/2024
+##
+## Email contact: madi[at]csp-inc.org
+##
+## ---------------------------
+##
+## Notes: 
+
+
 ## Summary stats functions -----
 
 # This function summarizes the OHV density classes in the decadal layers
@@ -438,8 +456,10 @@ nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
     if(update0){
     raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
     }
+    original_name <- names(raster_masked) %>% str_replace("_masked_9", "")
     names(raster_masked) <- paste0(names(raster_masked),"_nlcdmask")
     if(writeR){
+      names(raster_masked) <- paste0(original_name,"_cleaned")
       writeRaster(raster_masked, file = paste0("./output_layers/",names(raster_masked),".tif"),overwrite = TRUE)
     }
     x[[i]] <- raster_masked
@@ -451,7 +471,7 @@ nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
 # Apply to a rasterstack
 roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
   masks <- list.files("./other_data/masks/TIGER", recursive = TRUE, full.names = TRUE)
-  masks <- c(masks[1],masks) # Need to repeat the 1992 roads mask for the 1970s
+  masks <- c(masks[1],masks) # Need to repeat the 2000 roads mask for the 1970s
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
     mask <- rast(masks[i])
@@ -461,8 +481,14 @@ roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
     if(update0){
       raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
     }
+    original_name <- names(raster_masked) %>% str_replace("_masked_9", "") %>% str_replace("_nlcdmask", "") %>% str_replace("_cleaned", "")
     names(raster_masked) <- paste0(names(raster_masked),"_roadsmask")
     if(writeR){
+      if(isTRUE(grepl("_nlcdmask|cleaned",names(raster_masked))) == TRUE){ # If it has already been masked for nlcd, then this is cleaned 3
+        names(raster_masked) <- paste0(original_name,"_cleaned3")
+      } else { # If its just being masked for roads, then its cleaned 2
+        names(raster_masked) <- paste0(original_name,"_cleaned2")
+      }
       writeRaster(raster_masked, file = paste0("./output_layers/",names(raster_masked),".tif"),overwrite = TRUE)
     }
     x[[i]] <- raster_masked

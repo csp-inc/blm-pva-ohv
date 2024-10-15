@@ -22,7 +22,7 @@ rm(list=ls())
 
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","googleCloudStorageR","googleAuthR","stringr")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -182,63 +182,54 @@ ggplot(output_nlcd_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = p
 ## Part III: Running loop to clean layers and run moving window over them and save output layers -----
 
 classifications <- c("cat","bin","high","merged")
-classifications_full <- c("categorical","binary","high","merged")
 cleaning <- c("","cleaned","cleaned2","cleaned3")
 window_rad <- c(200,400)
 
 for(i in 1:length(classifications)){
   files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = classifications[i])
+  # Have to re-order because lowercase comes last (need netr before NAIP)
   r1 <- rast(files_list[3])
   r2 <- rast(files_list[4])
   r3 <- rast(files_list[1])
   r4 <- rast(files_list[2])
   stack <- c(r1,r2,r3,r4)
-  names(stack) <- paste(names(stack), classifications[i], sep="_")
   plot(stack)
+  salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
   for(j in 1:length(cleaning)){
     if(j == 1){
       stack_masked <- stack
     }
     if(j == 2){
-      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
       stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
-      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "nlcdmask")
-      files_list <- files_list[grepl(classifications[i],files_list)]
-      for(k in 1:4){
-        r <- rast(files_list[k])
-        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned.tif"),overwrite = TRUE)
-      }
     }
     if(j == 3){
-      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
       stack_masked <- roads_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
-      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "roadsmask")
-      files_list <- files_list[grepl(classifications[i],files_list)]
-      for(k in 1:4){
-        r <- rast(files_list[k])
-        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned2.tif"),overwrite = TRUE)
-      }
     }
     if(j == 4){
-      salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
       stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
       stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
-      files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = "nlcdmask_roadsmask")
-      files_list <- files_list[grepl(classifications[i],files_list)]
-      for(k in 1:4){
-        r <- rast(files_list[k])
-        writeRaster(r, paste0("./output_layers/", substr(basename(files_list[k]),1,10),classifications[i],"_cleaned3.tif"),overwrite = TRUE)
-      }
+
     }
     for(k in 1:length(window_rad)){
+      if(j == 1){
       stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_max, paste0("./output_layers/OHV_", classifications_full[i],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
       
       stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications_full[i],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
       
       stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications_full[i],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+      } else {
+        stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
+        
+        stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
+        
+        stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+      }
     }
   }
 }

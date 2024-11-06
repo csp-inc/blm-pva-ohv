@@ -524,11 +524,12 @@ sum_window <- function(x, radius = 400, writeR = FALSE){
   for(i in 1:nlyr(x)){
     raster <- x[[i]]
     focal_num<-radius
+    focal_size<-radius*2
     focal_shape<-'circle'
     foc_mat<-focalMat(raster, focal_num, focal_shape, fillNA= TRUE) #matrix for use in focal function. change number based on what radius of circle should be
     foc_mat[foc_mat>0] <- 1
     raster_foc <-focal(raster, foc_mat, fun = "sum", na.policy = "all", na.rm = TRUE)
-    names(raster_foc) <- paste0(names(raster),"_focsum_",radius)
+    names(raster_foc) <- paste0(names(raster),"_focsum_",focal_size)
     if(writeR){
       writeRaster(raster_foc, file = paste0("./output_layers/",names(raster_foc),".tif"),overwrite = TRUE)
     }
@@ -542,11 +543,12 @@ mode_window <- function(x, radius = 400, writeR = FALSE){
   for(i in 1:nlyr(x)){
     raster <- x[[i]]
     focal_num<-radius
+    focal_size<-radius*2
     focal_shape<-'circle'
     foc_mat<-focalMat(raster, focal_num, focal_shape, fillNA= TRUE) #matrix for use in focal function. change number based on what radius of circle should be
     foc_mat[foc_mat>0] <- 1
     raster_foc <-focal(raster, foc_mat, fun = "modal", na.policy = "all", na.rm = TRUE)
-    names(raster_foc) <- paste0(names(raster),"_focmode_",radius)
+    names(raster_foc) <- paste0(names(raster),"_focmode_",focal_size)
     if(writeR){
       writeRaster(raster_foc, file = paste0("./output_layers/",names(raster_foc),".tif"),overwrite = TRUE)
     }
@@ -559,11 +561,12 @@ max_window <- function(x, radius = 400, writeR = FALSE){
   for(i in 1:nlyr(x)){
     raster <- x[[i]]
     focal_num<-radius
+    focal_size<-radius*2
     focal_shape<-'circle'
     foc_mat<-focalMat(raster, focal_num, focal_shape, fillNA= TRUE) #matrix for use in focal function. change number based on what radius of circle should be
     foc_mat[foc_mat>0] <- 1
     raster_foc <-focal(raster, foc_mat, fun = "max", na.policy = "all", na.rm = TRUE)
-    names(raster_foc) <- paste0(names(raster),"_focmax_",radius)
+    names(raster_foc) <- paste0(names(raster),"_focmax_",focal_size)
     if(writeR){
       writeRaster(raster_foc, file = paste0("./output_layers/",names(raster_foc),".tif"),overwrite = TRUE)
     }

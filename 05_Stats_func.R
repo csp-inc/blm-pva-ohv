@@ -184,6 +184,7 @@ ggplot(output_nlcd_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = p
 classifications <- c("cat","bin","high","merged")
 cleaning <- c("","cleaned","cleaned2","cleaned3")
 window_rad <- c(200,400)
+window_size <- c(400,800)
 
 for(i in 1:length(classifications)){
   files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = classifications[i])
@@ -195,7 +196,7 @@ for(i in 1:length(classifications)){
   stack <- c(r1,r2,r3,r4)
   plot(stack)
   salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
-  for(j in 1:length(cleaning)){
+  for(j in 3:4){ #1:length(cleaning)
     if(j == 1){
       stack_masked <- stack
     }
@@ -210,25 +211,25 @@ for(i in 1:length(classifications)){
       stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
 
     }
-    for(k in 1:length(window_rad)){
+    for(k in 1:length(window_rad)){ 
       if(j == 1){
       stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_max_", window_size[k],"m.tif"),overwrite = TRUE)
       
       stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_mode_", window_size[k],"m.tif"),overwrite = TRUE)
       
       stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-      writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+      writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_sum_", window_size[k],"m.tif"),overwrite = TRUE)
       } else {
         stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-        writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_max_", window_rad[k],"m.tif"),overwrite = TRUE)
+        writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_max_", window_size[k],"m.tif"),overwrite = TRUE)
         
         stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-        writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_mode_", window_rad[k],"m.tif"),overwrite = TRUE)
+        writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_mode_", window_size[k],"m.tif"),overwrite = TRUE)
         
         stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
-        writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_sum_", window_rad[k],"m.tif"),overwrite = TRUE)
+        writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_sum_", window_size[k],"m.tif"),overwrite = TRUE)
       }
     }
   }

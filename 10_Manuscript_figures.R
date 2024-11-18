@@ -21,11 +21,14 @@
 rm(list=ls())
 ## Loading in packages -----
 list.of.packages <- c("tidyverse","sf","terra","dplyr","devtools", "RColorBrewer",
-                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","ggplot2","ggeffects")
+                      "remotes","purrr","nngeo","RColorBrewer","ggpubr","ggplot2","ggeffects","googleCloudStorageR","googleAuthR")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
 
+## Use the JSON file to authenticate communication between RStudio and GCS -----
+gcs_auth(json_file = "csp-inc.json", token = NULL, email = NULL)
+bucket_name<-"gs://csp_tortoisehub"
 
 ## Create necessary local folders -----
 if(dir.exists("./figures") == FALSE){dir.create("./figures")}
@@ -34,6 +37,62 @@ if(dir.exists("./figures") == FALSE){dir.create("./figures")}
 # Loads in the mdt range
 dt_range <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 st_area(dt_range) # 2.49582e+11 [m^2]
+
+# Download and load in the OHV open use areas, US states, and world boundaries
+
+if(dir.exists("./shapefiles/OHV_openuse") == FALSE){dir.create("./shapefiles/OHV_openuse")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/open-use-areas/")
+folder_to_download <- contents$name
+folder_to_download <- folder_to_download[grepl("web",folder_to_download)]
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/OHV_openuse","/",basename(x))))
+
+if(dir.exists("./shapefiles/TCA") == FALSE){dir.create("./shapefiles/TCA")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/MDT_TCA/")
+folder_to_download <- contents$name
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/TCA","/",basename(x))))
+
+
+if(dir.exists("./shapefiles/us_states") == FALSE){dir.create("./shapefiles/us_states")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/us_states/")
+folder_to_download <- contents$name
+folder_to_download <- folder_to_download[grepl("web",folder_to_download)]
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/us_states","/",basename(x))))
+
+if(dir.exists("./shapefiles/world-administrative-boundaries") == FALSE){dir.create("./shapefiles/world-administrative-boundaries")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/world-administrative-boundaries/")
+folder_to_download <- contents$name
+folder_to_download <- folder_to_download[grepl("web",folder_to_download)]
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/world-administrative-boundaries","/",basename(x))))
+
+
+if(dir.exists("./shapefiles/world-administrative-boundaries") == FALSE){dir.create("./shapefiles/world-administrative-boundaries")}
+
+contents <- gcs_list_objects(bucket = "gs://csp_tortoisehub",
+                             prefix = "data/01_administrative_boundaries/world-administrative-boundaries/")
+folder_to_download <- contents$name
+folder_to_download <- folder_to_download[grepl("web",folder_to_download)]
+purrr::map(folder_to_download, function(x)
+  gcs_get_object(x, bucket = "gs://csp_tortoisehub", overwrite = TRUE,
+                 saveToDisk = paste0("./shapefiles/world-administrative-boundaries","/",basename(x))))
+
+
+
 
 
 # # Loads in csv created in script "Master_creation.R"

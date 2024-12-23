@@ -186,17 +186,52 @@ cleaning <- c("","cleaned","cleaned2","cleaned3")
 window_rad <- c(200,400)
 window_size <- c(400,800)
 
+
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
+
+stack_cat <- c(n1970,n1980,N2010,N2020)
+salt_cleaned_stack_cat <- salt_clean(stack_cat, writeR = FALSE)
+
+
 for(i in 1:length(classifications)){
-  files_list <- list.files("./output_layers", recursive = TRUE, full.names = TRUE, pattern = classifications[i])
-  # Have to re-order because lowercase comes last (need netr before NAIP)
-  r1 <- rast(files_list[3])
-  r2 <- rast(files_list[4])
-  r3 <- rast(files_list[1])
-  r4 <- rast(files_list[2])
-  stack <- c(r1,r2,r3,r4)
-  plot(stack)
-  salt_cleaned_stack <- salt_clean(stack, writeR = FALSE)
-  for(j in 3:4){ #1:length(cleaning)
+  if(classifications[i] == "cat"){
+    stack <- stack_cat
+    salt_cleaned_stack <- salt_cleaned_stack_cat
+  }
+  if(classifications[i] == "bin"){
+    stack <- stack_cat
+    names(stack) <- sub("cat","bin",names(stack))
+    stack <- classify(stack, cbind(1, 5, 1), right=FALSE)
+    
+    salt_cleaned_stack <- salt_cleaned_stack_cat
+    names(salt_cleaned_stack) <- sub("cat","bin",names(salt_cleaned_stack))
+    salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(1, 5, 1), right=FALSE)
+  }
+  if(classifications[i] == "merged"){
+    stack <- stack_cat
+    names(stack) <- sub("cat","merged",names(stack))
+    stack <- classify(stack, cbind(1, 3, 2), right=FALSE)
+    
+    salt_cleaned_stack <- salt_cleaned_stack_cat
+    names(salt_cleaned_stack) <- sub("cat","merged",names(salt_cleaned_stack))
+    salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(1, 3, 2), right=FALSE)
+  }
+  if(classifications[i] == "high"){
+    stack <- stack_cat
+    names(stack) <- sub("cat","high",names(stack))
+    stack <- classify(stack, cbind(0, 3, 0), right=FALSE)
+    stack <- classify(stack, cbind(4, 5, 1), right=FALSE)
+    
+    salt_cleaned_stack <- salt_cleaned_stack_cat
+    names(salt_cleaned_stack) <- sub("cat","high",names(salt_cleaned_stack))
+    salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(0, 3, 0), right=FALSE)
+    salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(4, 5, 1), right=FALSE)
+  }
+  
+  for(j in 3:3){ #1:length(cleaning)
     if(j == 1){
       stack_masked <- stack
     }
@@ -209,9 +244,8 @@ for(i in 1:length(classifications)){
     if(j == 4){
       stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
       stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
-
     }
-    for(k in 1:length(window_rad)){ 
+    for(k in 2:length(window_rad)){ 
       if(j == 1){
       stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
       writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_max_", window_size[k],"m.tif"),overwrite = TRUE)
@@ -238,6 +272,4 @@ for(i in 1:length(classifications)){
 
 # Upload the cleaned/cleaned2/cleaned3 rasters to data > 05 covariate outputs > OHV
 # Upload the moving window rasters to data > 06 covariates post focal > OHV_routes_roads
-
-
 

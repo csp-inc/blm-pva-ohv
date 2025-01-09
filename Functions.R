@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 10/10/2024
+## Date last updated: 1/9/2025
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -445,16 +445,29 @@ salt_clean <- function(x,writeR = FALSE){
 
 # This function masks each OHV density layer with the correct NLCD mask (water and developed low medium and high, NLCD)
 # Apply to a rasterstack
-nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
+nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE){
   masks <- list.files("./other_data/masks/NLCD", recursive = TRUE, full.names = TRUE, pattern = "n21")
+  
+  if(remask){
+  cropping_shps <- list()
+  
+  cropping_shps[[1]] <- st_read("./shapefiles/cropping/1970_netr_noc_all.shp")
+  cropping_shps[[2]] <- st_read("./shapefiles/cropping/1980_netr_all.shp")
+  cropping_shps[[3]] <- st_read("./shapefiles/cropping/2010_crop.shp")
+  cropping_shps[[4]] <- st_read("./shapefiles/cropping/2020_crop.shp")
+  }
+  
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
     mask <- rast(masks[i])
     if(updateNA){
-    raster_masked <- mask(raster,mask, inverse = TRUE)
+      raster_masked <- mask(raster,mask, inverse = TRUE)
     }
     if(update0){
-    raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+      raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+    }
+    if(remask){
+      raster_masked <- mask(raster_masked,cropping_shps[[i]])
     }
     original_name <- names(raster_masked) %>% str_replace("_masked_9", "")
     names(raster_masked) <- paste0(names(raster_masked),"_nlcdmask")
@@ -469,9 +482,19 @@ nlcd_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
 
 # This function masks each OHV density layer with the correct TIGER roads mask (S1100, S1200 and S1400)
 # Apply to a rasterstack
-roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
+roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE){
   masks <- list.files("./other_data/masks/TIGER", recursive = TRUE, full.names = TRUE)
   masks <- c(masks[1],masks) # Need to repeat the 2000 roads mask for the 1970s
+  
+  if(remask){
+    cropping_shps <- list()
+    
+    cropping_shps[[1]] <- st_read("./shapefiles/cropping/1970_netr_noc_all.shp")
+    cropping_shps[[2]] <- st_read("./shapefiles/cropping/1980_netr_all.shp")
+    cropping_shps[[3]] <- st_read("./shapefiles/cropping/2010_crop.shp")
+    cropping_shps[[4]] <- st_read("./shapefiles/cropping/2020_crop.shp")
+  }
+  
   for (i in 1:nlyr(x)){
     raster <- x[[i]]
     mask <- rast(masks[i])
@@ -480,6 +503,9 @@ roads_mask <- function(x, writeR = FALSE, update0 = FALSE, updateNA = TRUE){
     }
     if(update0){
       raster_masked <- mask(raster,mask, inverse = TRUE, updatevalue = 0)
+    }
+    if(remask){
+      raster_masked <- mask(raster_masked,cropping_shps[[i]])
     }
     original_name <- names(raster_masked) %>% str_replace("_masked_9", "") %>% str_replace("_nlcdmask", "") %>% str_replace("_cleaned", "")
     names(raster_masked) <- paste0(names(raster_masked),"_roadsmask")

@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 12/23/2024
+## Date last updated: 1/9/2025
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -196,6 +196,20 @@ stack_cat <- c(n1970,n1980,N2010,N2020)
 salt_cleaned_stack_cat <- salt_clean(stack_cat, writeR = FALSE)
 
 
+cropping_shps <- list()
+
+cropping_shps[[1]] <- st_read("./shapefiles/cropping/1970_netr_noc_all.shp")
+cropping_shps[[2]] <- st_read("./shapefiles/cropping/1980_netr_all.shp")
+cropping_shps[[3]] <- st_read("./shapefiles/cropping/2010_crop.shp")
+cropping_shps[[4]] <- st_read("./shapefiles/cropping/2020_crop.shp")
+
+par(mfrow = c(2,2))
+plot(cropping_shps[[1]]$geometry)
+plot(cropping_shps[[2]]$geometry)
+plot(cropping_shps[[3]]$geometry)
+plot(cropping_shps[[4]]$geometry)
+
+
 for(i in 1:length(classifications)){
   if(classifications[i] == "cat"){
     stack <- stack_cat
@@ -231,38 +245,56 @@ for(i in 1:length(classifications)){
     salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(4, 5, 1), right=FALSE)
   }
   
-  for(j in 3:3){ #1:length(cleaning)
+  for(j in 3:length(cleaning)){ #1:length(cleaning)
     if(j == 1){
       stack_masked <- stack
     }
     if(j == 2){
-      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
     }
     if(j == 3){
-      stack_masked <- roads_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      stack_masked <- roads_mask(salt_cleaned_stack, writeR = TRUE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
     }
     if(j == 4){
-      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
-      stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE)
+      stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
+      stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
     }
     for(k in 2:length(window_rad)){ 
       if(j == 1){
       stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      for(l in 1:4){
+        stack_max[[l]] <- mask(stack_max[[l]],cropping_shps[[l]])
+      }
       writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_max_", window_size[k],"m.tif"),overwrite = TRUE)
       
       stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      for(l in 1:4){
+        stack_mode[[l]] <- mask(stack_mode[[l]],cropping_shps[[l]])
+      }
       writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_mode_", window_size[k],"m.tif"),overwrite = TRUE)
       
       stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+      for(l in 1:4){
+        stack_sum[[l]] <- mask(stack_sum[[l]],cropping_shps[[l]])
+      }
       writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],cleaning[j],"_sum_", window_size[k],"m.tif"),overwrite = TRUE)
       } else {
         stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        for(l in 1:4){
+          stack_max[[l]] <- mask(stack_max[[l]],cropping_shps[[l]])
+        }
         writeRaster(stack_max, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_max_", window_size[k],"m.tif"),overwrite = TRUE)
         
         stack_mode <- mode_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        for(l in 1:4){
+          stack_mode[[l]] <- mask(stack_mode[[l]],cropping_shps[[l]])
+        }
         writeRaster(stack_mode, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_mode_", window_size[k],"m.tif"),overwrite = TRUE)
         
         stack_sum <- sum_window(stack_masked, radius = window_rad[k], writeR = FALSE)
+        for(l in 1:4){
+          stack_sum[[l]] <- mask(stack_sum[[l]],cropping_shps[[l]])
+        }
         writeRaster(stack_sum, paste0("./output_layers/OHV_", classifications[i],"_",cleaning[j],"_sum_", window_size[k],"m.tif"),overwrite = TRUE)
       }
     }

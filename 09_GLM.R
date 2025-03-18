@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 09/20/2024
+## Date last updated: 03/18/2025
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -167,58 +167,3 @@ exp((fixef(MOD_bin)[1]-0.004504)*sd(values_df_sub$year)) #5.372
 #   theme_minimal()
 # 
 # plot
-
-## Running model iterations on smaller subsample of the data
-# values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")
-# 
-# values_df_long <- values_df_long %>% mutate(value_bin = case_when(
-#   value == 0 ~ 0,
-#   value == 1 ~ 1,
-#   value == 2 ~ 1,
-#   value == 4 ~ 1
-# ))
-# 
-# for(i in 1:50){
-#   # values_df_long <- st_read("./other_data/master/master_cells_cleaned_long.shp")
-#   sd_csv <- read.csv("./models/GLM/model_info.csv", header = TRUE)
-#   
-#   # values_df_long <- values_df_long %>% mutate(value_bin = case_when(
-#   #   value == 0 ~ 0,
-#   #   value == 1 ~ 1,
-#   #   value == 2 ~ 1,
-#   #   value == 4 ~ 1
-#   # ))
-#   
-#   
-#   # Randomly sampling cell IDs
-#   sampled_values <- sample(unique(values_df_long$rstr_cl), 10451143 *.01, replace = FALSE) # 10% of the data
-#   
-#   # Subsetting the data to those randomly sampled IDs
-#   values_df_sub <- values_df_long %>% filter(rstr_cl %in% sampled_values)
-#   
-#   # Creating columns for year scaled and grid cell x year (factor)
-#   values_df_sub$year <- as.numeric(values_df_sub$year)
-#   values_df_sub$year_s <- scale(values_df_sub$year)
-#   
-#   values_df_sub$year_sc <- as.numeric(values_df_sub$year_s[,1])
-#   
-#   values_df_sub$value_s <- scale(values_df_sub$value)
-#   values_df_sub$year_f <- as.factor(values_df_sub$year)
-#   values_df_sub$state <- as.factor(values_df_sub$state)
-#   values_df_sub$grd_cll_yr <- paste0(values_df_sub$grd_cll,"_",values_df_sub$year_f)
-#   values_df_sub$grd_cll_yr <- as.factor(values_df_sub$grd_cll_yr)
-#   values_df_sub$rstr_cl <- as.factor(values_df_sub$rstr_cl)
-#   
-#   MOD_bin <- glmer(value_bin ~ year_sc + (1 | rstr_cl) + (1| grd_cll_yr), data = values_df_sub, family = binomial(link = "logit"))
-#   
-#   sd_csv[i,1] <- i
-#   sd_csv[i,2] <- sd(values_df_sub$year)
-#   sd_csv[i,3] <- mean(values_df_sub$year)
-#   
-#   write.csv(sd_csv,"./models/GLM/model_info.csv",row.names = FALSE)
-#   saveRDS(MOD_bin,paste0("./models/GLM/mod_10_",i,".RDS"))
-# }
-# 
-# 
-# sd_csv <- read.csv("./models/GLM/model_info.csv", header = TRUE)
-# 

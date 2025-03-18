@@ -7,7 +7,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 09/20/2024
+## Date last updated: 03/13/2025
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -41,28 +41,33 @@ n1980 <- rast("./output_layers/netr_1980_cat.tif")
 N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
 N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
 
-# # Cleaned
-# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_nlcdmask.tif")
-# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask.tif")
-# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask.tif")
-# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask.tif")
-# 
-# # Cleaned 2
-# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_roadsmask.tif")
-# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_roadsmask.tif")
-# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_roadsmask.tif")
-# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_roadsmask.tif")
-# 
-# # Cleaned 3
-# n1970 <- rast("./output_layers/netr_1970_cat_masked_9_nlcdmask_roadsmask.tif")
-# n1980 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask_roadsmask.tif")
-# N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
-# N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask_roadsmask.tif")
-
-
-
 # Stacking
 stack <- c(n1970,n1980,N2010,N2020)
+
+## TOGGLE - Choose which cleaning method
+# cleaning = NA
+# cleaning = cleaned
+# cleaning = cleaned2
+cleaning = cleaned3
+
+# Cleaned
+if(cleaning == "cleaned"){
+  stack <- salt_clean(stack, writeR = FALSE)
+  stack <- nlcd_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+}
+
+# Cleaned 2
+if(cleaning == "cleaned2"){
+  stack <- salt_clean(stack, writeR = FALSE)
+  stack <- roads_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+}
+
+# Cleaned 3
+if(cleaning == "cleaned3"){
+  stack <- salt_clean(stack, writeR = FALSE)
+  stack <- nlcd_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+  stack <- roads_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+}
 
 # Getting values from each cell in each decade raster
 val_1970 <- values(stack[[1]])
@@ -154,10 +159,22 @@ names(values_df) <- c("V1970","V1980","V2010","V2020","raster_cell","grid_cell",
 
 # # Saving as a shapefile with geometry
 if(dir.exists("./other_data/master") == FALSE){dir.create("./other_data/master")}
-# st_write(values_df,"./other_data/master/master_cells.shp",append=FALSE)
-
-# Removing geometry to save as a .csv
-values_df_no_geom <- as.data.frame(values_df[,-8])
-head(values_df_no_geom)
-
-write.csv(values_df_no_geom,"./other_data/master/master_cells.csv")
+if(is.na(cleaning) == TRUE){
+  st_write(values_df,paste0(paste0("./other_data/master/master_cells_",cleaned,".shp")),append=FALSE)
+  
+  # Removing geometry to save as a .csv
+  values_df_no_geom <- as.data.frame(values_df[,-8])
+  head(values_df_no_geom)
+  
+  write.csv(values_df_no_geom,paste0("./other_data/master/master_cells_",cleaned,".csv"))
+  
+} else {
+  st_write(values_df,"./other_data/master/master_cells.shp",append=FALSE)
+  
+  # Removing geometry to save as a .csv
+  values_df_no_geom <- as.data.frame(values_df[,-8])
+  head(values_df_no_geom)
+  
+  write.csv(values_df_no_geom,"./other_data/master/master_cells.csv")
+  
+}

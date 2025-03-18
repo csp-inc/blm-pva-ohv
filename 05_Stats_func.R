@@ -129,7 +129,7 @@ ggplot(output_salt_cleaned, aes(fill=Class, y=Proportion, x=Decade, label = past
 # Function created in Functions.R
 # This function applies the nlcd mask created in 03_NLCD_masks.R to the ohv layer
 # Creates "cleaned"
-stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
+stack_masked_nlcd <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
 plot(stack_masked_nlcd)
 output_nlcd_mask <- class_summary(stack_masked_nlcd)
 
@@ -147,7 +147,7 @@ ggplot(output_nlcd_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0(
 # Function created in Functions.R
 # This function applies the roads mask created in 03_Road_masks.R to the ohv layer
 # Creates "cleaned2"
-stack_masked_roads <- roads_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
+stack_masked_roads <- roads_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
 plot(stack_masked_roads)
 output_roads_mask <- class_summary(stack_masked_roads)
 
@@ -163,7 +163,7 @@ ggplot(output_roads_mask, aes(fill=Class, y=Proportion, x=Decade, label = paste0
 
 # Applies the roads mask function to the stack already masked for NLCD
 # Creates "cleaned3"
-stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = FALSE, update0 = TRUE, updateNA = FALSE)
+stack_masked_nlcd_roads <- roads_mask(stack_masked_nlcd, writeR = FALSE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
 plot(stack_masked_nlcd_roads)
 output_nlcd_roads_mask <- class_summary(stack_masked_nlcd_roads)
 
@@ -245,7 +245,7 @@ for(i in 1:length(classifications)){
     salt_cleaned_stack <- classify(salt_cleaned_stack, cbind(4, 5, 1), right=FALSE)
   }
   
-  for(j in 3:length(cleaning)){ #1:length(cleaning)
+  for(j in 1:length(cleaning)){ #1:length(cleaning)
     if(j == 1){
       stack_masked <- stack
     }
@@ -259,7 +259,7 @@ for(i in 1:length(classifications)){
       stack_masked <- nlcd_mask(salt_cleaned_stack, writeR = FALSE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
       stack_masked <- roads_mask(stack_masked, writeR = TRUE, update0 = TRUE, updateNA = FALSE, remask = TRUE)
     }
-    for(k in 2:length(window_rad)){ 
+    for(k in 1:length(window_rad)){ 
       if(j == 1){
       stack_max <- max_window(stack_masked, radius = window_rad[k], writeR = FALSE)
       for(l in 1:4){

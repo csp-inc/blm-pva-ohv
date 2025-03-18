@@ -38,9 +38,22 @@ dt_range_web <- st_read("./shapefiles/DTrange/dtrange_web.shp")
 
 ## Creating the dataframe -----
 # Loading in the 2010 layer you want to use
-# N10 <- rast("./output_layers/N10_cat.tif")
-# N10 <- rast("./output_layers/NAIP_2010_cat_masked_9.tif")
-N10 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
+source("./Functions.R")
+
+# Loads in original layers created in scripts "Mosaick.R" and "Processing.R"
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
+
+# Stacks
+stack <- c(n1970,n1980,N2010,N2020)
+# Applies masking and cleaning procedure
+stack <- salt_clean(stack, writeR = FALSE)
+stack <- nlcd_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+stack_masked_nlcd_roads <- roads_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+
+N10 <- stack_masked_nlcd_roads[[3]]
 
 
 # Convert raster to sf object

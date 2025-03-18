@@ -8,7 +8,7 @@
 ## Author: Madeline Standen
 ##
 ## Date Created: 02/__/2024
-## Date last updated: 09/20/2024
+## Date last updated: 03/13/2025
 ##
 ## Email contact: madi[at]csp-inc.org
 ##
@@ -35,17 +35,27 @@ if(dir.exists("./other_data") == FALSE){dir.create("./other_data")}
 if(dir.exists("./other_data/masks") == FALSE){dir.create("./other_data/masks")}
 if(dir.exists("./other_data/masks/all_masks") == FALSE){dir.create("./other_data/masks/all_masks")}
 
+source("./Functions.R")
 
-n1970 <- rast("./output_layers/netr_1970_cat_masked_9_nlcdmask_roadsmask.tif")
-n1980 <- rast("./output_layers/netr_1980_cat_masked_9_nlcdmask_roadsmask.tif")
-N2010 <- rast("./output_layers/NAIP_2010_cat_masked_9_nlcdmask_roadsmask.tif")
-N2020 <- rast("./output_layers/NAIP_2020_cat_masked_9_nlcdmask_roadsmask.tif")
+# Unmasked
+n1970 <- rast("./output_layers/netr_1970_cat.tif")
+n1980 <- rast("./output_layers/netr_1980_cat.tif")
+N2010 <- rast("./output_layers/NAIP_2010_cat.tif")
+N2020 <- rast("./output_layers/NAIP_2020_cat.tif")
+
+# Stacking
+stack <- c(n1970,n1980,N2010,N2020)
+stack <- salt_clean(stack, writeR = FALSE)
+stack <- nlcd_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+stack <- roads_mask(stack, writeR = FALSE, update0 = FALSE, updateNA = TRUE, remask = TRUE)
+
 
 rast_list <- list()
-rast_list[[1]] <- n1970
-rast_list[[2]] <- n1980 
-rast_list[[3]] <- N2010
-rast_list[[4]] <- N2020
+rast_list[[1]] <- stack[[1]]
+rast_list[[2]] <- stack[[2]]
+rast_list[[3]] <- stack[[3]]
+rast_list[[4]] <- stack[[4]]
+names(rast_list) <- c("netr_1970_cleaned3","netr_1980_cleaned3","NAIP_2010_cleaned3","NAIP_2020_cleaned3")
 
 blank_rast <- N2020
 
@@ -59,17 +69,17 @@ plot(blank_rast)
 for(i in 1:length(rast_list)){
   mask <- mask(blank_rast,rast_list[[i]], inverse = TRUE)
   mask <- classify(mask, cbind(0, 5, 1), right=FALSE)
-  writeRaster(mask ,paste0("./other_data/masks/all_masks/",names(rast_list[[i]]),"_MASK.tif"))
+  writeRaster(mask ,paste0("./other_data/masks/all_masks/",names(rast_list)[i],"_MASK.tif"),overwrite=TRUE)
 }
 
 # Making merged 1980s and 2020s mask for mapping
 
-mask_80s <- rast("./other_data/masks/all_masks/netr_1980_masked_9_nlcdmask_roadsmask_MASK.tif")
+mask_80s <- rast("./other_data/masks/all_masks/netr_1980_cleaned3_MASK.tif")
 
-mask_2020s <- rast("./other_data/masks/all_masks/NAIP_2020_masked_9_nlcdmask_roadsmask_MASK.tif")
+mask_2020s <- rast("./other_data/masks/all_masks/NAIP_2020_cleaned3_MASK.tif")
 
 merged_mask <- terra::mosaic(mask_80s,mask_2020s,fun = "max")
 plot(merged_mask)
-writeRaster(merged_mask, "./other_data/masks/all_masks/Merged_80s_2020s_masked_9_nlcdmask_roadsmask_MASK.tif")
+writeRaster(merged_mask, "./other_data/masks/all_masks/Merged_80s_2020s_cleaned3_MASK.tif")
 
 

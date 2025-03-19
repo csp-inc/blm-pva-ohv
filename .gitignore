@@ -12,3 +12,8 @@ figures
 shapefiles
 other_data
 NETR_lookup
+Change_Rasters.R
+Comparing_Collins.R
+JagsUI_multi.R
+multi_jags_function.R
+csp-inc.json

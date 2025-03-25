@@ -1,5 +1,5 @@
 # blm-pva-ohv
-This repo contains code for downloading and processing the OHV route density layers, analyses and modeling, and producing figures for the associated manuscript (Robillard et al., 2025). Many scripts in this repo are reliant on products created in other scripts, so it is necessary to follow the suggested order of the scripts below to create these products.
+This repo contains code for downloading and processing the OHV route density layers, analyses and modeling, and producing figures for the associated manuscript (Robillard et al., 2025). Many scripts in this repo are reliant on products created in other scripts, so it is necessary to follow the suggested order of the scripts below to create these products. The code in this repository is being shared 'as is' and without guarantee of functionality or support.
 
 1. 01_Mosaic.R
   - This script downloads the raw OHV inference tiles from GCS and merges them into spatial layers. It also clips decadal layers using shapefiles manually created in QGIS to clip out issues where inference failed.

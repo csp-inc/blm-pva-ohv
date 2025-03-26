@@ -26,5 +26,4 @@ Any additional scripts included in this repo are for documentation of work, and 
 After running these scripts in the suggested order, you should have outputs necessary to create summary statistics and files needed to create QGIS maps, recreate figures used for the manuscript (10_Manuscript_figures.R), and run various analyses used in the manuscript (08_Routes_Analysis.R and 09_GLM.R). 
 
 
-All questions regarding this repo should be directed to Madeline Standen (madi@csp-inc.org).
-All questions regarding the computer vision model used to create these OHV layers should be directed to Alex Robillard (alex.j.robillard@gmail.com).
+All questions regarding this repo should be directed to Brett Dickson (brett@csp-inc.org).
